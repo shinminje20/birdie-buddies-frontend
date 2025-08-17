@@ -1,6 +1,6 @@
 // src/lib/auth.tsx
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { me, requestOtp, verifyOtp, User } from "./api";
+import { me, requestOtp, verifyOtp, type User } from "./api";
 import { logout } from "./api";
 
 type AuthContextType = {

@@ -1,25 +1,36 @@
 // src/lib/sse.ts
 import { useEffect } from "react";
-import { API_BASE } from "./api";
 
-export function useSessionSSE(sessionId: string, onEvent: (e: any) => void) {
+// /events/sessions/{session_id} (session-level updates) :contentReference[oaicite:21]{index=21}
+export function useSessionSSE(
+  sessionId: string | undefined,
+  onAnyEvent: (e: MessageEvent) => void
+) {
   useEffect(() => {
     if (!sessionId) return;
-    const es = new EventSource(`${API_BASE}/events/sessions/${sessionId}`, { withCredentials: true });
-    es.onmessage = (msg) => {
-      try { onEvent(JSON.parse(msg.data)); } catch { /* ignore */ }
-    };
-    es.onerror = () => { /* browser will auto-reconnect */ };
+    const url = new URL(
+      `/events/sessions/${sessionId}`,
+      import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+    );
+    const es = new EventSource(url.toString(), { withCredentials: true });
+    es.addEventListener("message", onAnyEvent);
     return () => es.close();
-  }, [sessionId, onEvent]);
+  }, [sessionId, onAnyEvent]);
 }
 
-export function useRequestSSE(requestId: string, onEvent: (e: any) => void) {
+// /events/requests/{request_id} (registration flow status) :contentReference[oaicite:22]{index=22}
+export function useRequestSSE(
+  requestId: string | undefined,
+  onAnyEvent: (e: MessageEvent) => void
+) {
   useEffect(() => {
     if (!requestId) return;
-    const es = new EventSource(`${API_BASE}/events/requests/${requestId}`, { withCredentials: true });
-    es.onmessage = (msg) => { try { onEvent(JSON.parse(msg.data)); } catch {} };
-    es.onerror = () => {};
+    const url = new URL(
+      `/events/requests/${requestId}`,
+      import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
+    );
+    const es = new EventSource(url.toString(), { withCredentials: true });
+    es.addEventListener("message", onAnyEvent);
     return () => es.close();
-  }, [requestId, onEvent]);
+  }, [requestId, onAnyEvent]);
 }
