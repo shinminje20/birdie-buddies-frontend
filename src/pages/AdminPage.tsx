@@ -231,10 +231,10 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
         <label className="form-label">Capacity</label>
         <input
           className="form-input"
-          type="number"
-          min={1}
+          type="string"
+          //   min={0}
           value={capacity}
-          onChange={(e) => setCapacity(Math.max(1, +e.target.value))}
+          onChange={(e) => setCapacity(Math.max(0, +e.target.value))}
         />
       </div>
 
@@ -242,9 +242,9 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
         <label className="form-label">Price (per player, $)</label>
         <input
           className="form-input"
-          type="number"
-          min={0}
-          step={0.5}
+          type="string"
+          //   min={0}
+          //   step={0.5}
           value={priceDollars}
           onChange={(e) =>
             setPriceDollars(e.target.value === "" ? 0 : Number(e.target.value))
