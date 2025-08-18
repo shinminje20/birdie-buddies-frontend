@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import MobileShell from "../components/MobileShell/MobileShell";
 import { useAuth } from "../lib/auth";
-import { logout as apiLogout } from "../lib/api";
+// import { logout as apiLogout } from "../lib/api";
 import { useNavigate, useLocation, Navigate } from "react-router-dom";
 
 export default function ProfilePage() {

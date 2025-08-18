@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import MobileShell from "../components/MobileShell/MobileShell";
@@ -17,17 +17,16 @@ import {
 } from "../lib/api";
 import { useRequestSSE, useSessionSSE } from "../lib/sse";
 import FlashBanners from "../components/UI/FlashBanners";
-import { flashSuccess, flashError, flashInfo } from "../lib/flash";
+import { flashSuccess, flashInfo } from "../lib/flash";
 import AddGuestInline from "../components/Session/AddGuestInline";
 
 function UTCtohhmmTimeForamt(date: Date): string {
   let hours = date.getHours();
-  let minutes = date.getMinutes();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
   const ampm = hours >= 12 ? "PM" : "AM";
 
   hours = hours % 12;
   hours = hours ? hours : 12; // the hour '0' should be '12'
-  minutes = minutes < 10 ? "0" + minutes : minutes;
 
   return `${hours}:${minutes} ${ampm}`;
 }

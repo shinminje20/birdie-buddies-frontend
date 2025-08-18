@@ -1,20 +1,24 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
-export function RequireAuth({ children }: { children: JSX.Element }) {
+// --- Route guards (inline for convenience) ---
+export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const loc = useLocation();
   if (loading) return null;
-  if (!user) return <Navigate to="/profile" state={{ from: loc }} replace />;
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 }
-
-export function RequireAdmin({ children }: { children: JSX.Element }) {
+export function RequireGuest({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  const loc = useLocation();
   if (loading) return null;
-  if (!user) return <Navigate to="/profile" state={{ from: loc }} replace />;
-  if (user.role !== "admin") return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/sessions" replace />;
+  return children;
+}
+export function RequireAdmin({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!user.is_admin) return <Navigate to="/sessions" replace />;
   return children;
 }

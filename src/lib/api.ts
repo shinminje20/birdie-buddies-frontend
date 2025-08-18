@@ -69,7 +69,10 @@ function dollarsFromCents(v: number | null | undefined) {
 }
 export const $ = { fromCents: dollarsFromCents };
 
-async function http<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function http<T>(
+  path: string,
+  init: Omit<RequestInit, "body"> & { body?: unknown } = {}
+): Promise<T> {
   const headers = {
     "Content-Type": "application/json",
     ...(init.headers || {}),

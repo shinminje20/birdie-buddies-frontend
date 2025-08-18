@@ -1,4 +1,3 @@
-import React from "react";
 type Props = { value: number; onChange: (n: number) => void; max?: number };
 export default function SeatsSelector({ value, onChange, max = 3 }: Props) {
   return (

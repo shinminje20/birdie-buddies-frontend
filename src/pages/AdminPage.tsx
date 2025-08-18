@@ -1,5 +1,5 @@
 // src/pages/AdminPage.tsx
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MobileShell from "../components/MobileShell/MobileShell";
@@ -54,12 +54,11 @@ function localDateTimeToUTCISO(
 
 function UTCtohhmmTimeForamt(date: Date): string {
   let hours = date.getHours();
-  let minutes = date.getMinutes();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
   const ampm = hours >= 12 ? "PM" : "AM";
 
   hours = hours % 12;
   hours = hours ? hours : 12; // the hour '0' should be '12'
-  minutes = minutes < 10 ? "0" + minutes : minutes;
 
   return `${hours}:${minutes} ${ampm}`;
 }
@@ -85,9 +84,9 @@ function mmdd(iso: string) {
 }
 
 /** Hide fee-hold / hold-release ledger kinds */
-function isHiddenKind(kind: string) {
-  return /^(fee[_-]?hold|hold[_-]?release)$/i.test(kind || "");
-}
+// function isHiddenKind(kind: string) {
+//   return /^(fee[_-]?hold|hold[_-]?release)$/i.test(kind || "");
+// }
 
 /* ---------------- Page ---------------- */
 
@@ -247,7 +246,9 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
           min={0}
           step={0.5}
           value={priceDollars}
-          onChange={(e) => setPriceDollars(e.target.value)}
+          onChange={(e) =>
+            setPriceDollars(e.target.value === "" ? 0 : Number(e.target.value))
+          }
         />
       </div>
 
