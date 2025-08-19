@@ -62,19 +62,7 @@ export default function NavBar() {
           </button>
 
           {open && (
-            <div
-              style={{
-                position: "absolute",
-                right: 0,
-                top: "calc(100% + 8px)",
-                background: "var(--surface-2, #1f1f1f)",
-                borderRadius: 12,
-                padding: 8,
-                boxShadow: "0 8px 20px rgba(0,0,0,.3)",
-                minWidth: 220,
-                zIndex: 10,
-              }}
-            >
+            <div className="user-info">
               <div style={{ padding: "8px 10px", opacity: 0.9 }}>
                 <div style={{ fontWeight: 600 }}>{user?.name}</div>
                 <div style={{ fontSize: 12 }}>{user?.email}</div>

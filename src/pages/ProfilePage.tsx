@@ -17,6 +17,7 @@ export default function ProfilePage() {
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"enter" | "verify">("enter");
   const [busy, setBusy] = useState(false);
@@ -48,7 +49,12 @@ export default function ProfilePage() {
     setBusy(true);
     setError(null);
     try {
-      await verifyOtpCtx(email.trim(), code.trim(), name.trim() || undefined); // use context (sets user)
+      await verifyOtpCtx(
+        email.trim(),
+        code.trim(),
+        name.trim().toLowerCase(),
+        phone.trim()
+      ); // use context (sets user)
       const to =
         (typeof (loc.state as any)?.from === "string"
           ? (loc.state as any).from
@@ -94,14 +100,20 @@ export default function ProfilePage() {
           {step === "enter" && (
             <>
               <div className="form-group">
-                <label className="form-label">
-                  Name (optional, first login)
-                </label>
+                <label className="form-label">Name (Only first login)</label>
                 <input
                   className="form-input"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
+                />
+
+                <label className="form-label">Phone Number (no '-')</label>
+                <input
+                  className="form-input"
+                  placeholder="Phone Number"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
               <button

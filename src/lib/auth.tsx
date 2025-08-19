@@ -8,7 +8,12 @@ type AuthContextType = {
   loading: boolean;
   signOut: () => void; // clear local state; cookie remains until backend expiry
   requestOtp: (email: string) => Promise<void>;
-  verifyOtp: (email: string, code: string, name?: string) => Promise<void>;
+  verifyOtp: (
+    email: string,
+    code: string,
+    name?: string,
+    phone?: string
+  ) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>(null!);
@@ -41,8 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         requestOtp: async (email) => {
           await requestOtp(email);
         },
-        verifyOtp: async (email, code, name) => {
-          const u = await verifyOtp(email, code, name);
+        verifyOtp: async (email, code, name, phone) => {
+          const u = await verifyOtp(email, code, name, phone);
           setUser(u);
         },
       }}
