@@ -140,7 +140,7 @@ export const verifyOtp = (
   });
 
 export async function logout(): Promise<void> {
-  await http<void>("/auth/logout", { method: "POST" }); // :contentReference[oaicite:10]{index=10}
+  await http<void>("/auth/logout", { method: "POST", credentials: "include" }); // :contentReference[oaicite:10]{index=10}
 }
 
 /* -------- Sessions -------- */
