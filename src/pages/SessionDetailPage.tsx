@@ -12,24 +12,14 @@ import {
   cancelRegistration,
   type Session,
   type RegRow,
-  $,
+  formatDollarsFromCents,
+  UTCtohhmmTimeForamt,
   getRequestStatus,
 } from "../lib/api";
 import { useRequestSSE, useSessionSSE } from "../lib/sse";
 import FlashBanners from "../components/UI/FlashBanners";
 import { flashSuccess, flashInfo } from "../lib/flash";
 import AddGuestInline from "../components/Session/AddGuestInline";
-
-function UTCtohhmmTimeForamt(date: Date): string {
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, "0");
-  const ampm = hours >= 12 ? "PM" : "AM";
-
-  hours = hours % 12;
-  hours = hours ? hours : 12; // the hour '0' should be '12'
-
-  return `${hours}:${minutes} ${ampm}`;
-}
 
 export default function SessionDetailPage() {
   const { id = "" } = useParams();
@@ -76,9 +66,29 @@ export default function SessionDetailPage() {
     (r) => r.host_user_id === user?.id && r.state !== "canceled"
   );
 
-  const feeDisplay = sess.data ? $.fromCents(sess.data.fee_cents) : "0.00";
+  // all my active regs (confirmed or waitlisted) in this session
+  const myRegs = (regs.data ?? []).filter(
+    (r) => r.host_user_id === user?.id && r.state !== "canceled"
+  );
+
+  // pick the host registration row:
+  // - if there's a combined row (seats>1), it's the host
+  // - else use the row with no guest_names (seats=1, host seat)
+  const hostReg =
+    myRegs.find((r) => r.seats > 1) ??
+    myRegs.find((r) => !r.guest_names || r.guest_names.length === 0) ??
+    null;
+
+  // total active seats I currently hold (host + guests)
+  const myActiveSeatCount = myRegs.reduce((sum, r) => sum + (r.seats || 0), 0);
+
+  const hasMyReg = myRegs.length > 0;
+
+  const feeDisplay = sess.data
+    ? formatDollarsFromCents(sess.data.fee_cents)
+    : "0.00";
   const totalDisplay = sess.data
-    ? (Number(sess.data.fee_cents) * seats).toFixed(2)
+    ? ((Number(sess.data.fee_cents) * seats) / 100).toFixed(1)
     : "0.00";
 
   if (!sess.data)
@@ -104,83 +114,119 @@ export default function SessionDetailPage() {
         </div>
         {/* Registration */}
         <div className="registration-card">
-          <h3 className="registration-title">Register</h3>
-          <div className="form-group">
-            <label className="form-label">Seats (1 + up to 2 guests)</label>
-            <SeatsSelector value={seats} onChange={setSeats} />
-          </div>
-          {seats >= 2 && (
-            <div className="form-group">
-              <label className="form-label">Guest 1 Name</label>
-              <input
-                className="form-input"
-                value={guest1}
-                onChange={(e) => setGuest1(e.target.value)}
-              />
-            </div>
-          )}
-          {seats >= 3 && (
-            <div className="form-group">
-              <label className="form-label">Guest 2 Name</label>
-              <input
-                className="form-input"
-                value={guest2}
-                onChange={(e) => setGuest2(e.target.value)}
-              />
-            </div>
-          )}
-          <div className="cost-display">
-            <div>
-              <div className="cost-label">Total</div>
-              <div className="cost-value">${totalDisplay}</div>
-            </div>
-          </div>
-          <FlashBanners />
-          {!myReg && (
-            <Button
-              disabled={
-                !user ||
-                requestId !== undefined ||
-                seats !== 1 + guestNames.length
-              }
-              onClick={async () => {
-                const res = await enqueueRegistration(s.id, seats, guestNames);
-                setRequestId(res.request_id); // will update via SSE/poll
-                flashInfo("Registration Submitted!");
-                // fallback poll in case SSE infra is blocked:
-                setTimeout(async () => {
-                  if (!res.request_id) return;
-                  try {
-                    await getRequestStatus(res.request_id);
-                    refetchAll();
-                  } catch {}
-                }, 2000);
-              }}
-            >
-              {"Register Now"}
-            </Button>
-          )}
-          {myReg && (
+          {!hasMyReg ? (
             <>
-              <button
-                className="btn btn-danger"
-                style={{ marginTop: 8 }}
-                onClick={() =>
-                  cancelRegistration(myReg.registration_id).then(refetchAll)
-                }
-              >
-                Cancel My Registration
-              </button>
+              <h3 className="registration-title">Register</h3>
+              <div className="form-group">
+                <label className="form-label">Seats (1 + up to 2 guests)</label>
+                <SeatsSelector value={seats} onChange={setSeats} />
+              </div>
 
-              {/* New: Add guest inline if you have < 3 seats */}
-              <AddGuestInline
-                hostRegistrationId={myReg.registration_id}
-                currentSeats={myReg.seats} // seats = host + guests
-                maxSeats={3} // host + up to 2 guests
-                onAdded={refetchAll}
-              />
+              {seats >= 2 && (
+                <div className="form-group">
+                  <label className="form-label">Guest 1 Name</label>
+                  <input
+                    className="form-input"
+                    value={guest1}
+                    onChange={(e) => setGuest1(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {seats >= 3 && (
+                <div className="form-group">
+                  <label className="form-label">Guest 2 Name</label>
+                  <input
+                    className="form-input"
+                    value={guest2}
+                    onChange={(e) => setGuest2(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="cost-display">
+                <div>
+                  <div className="cost-label">Total</div>
+                  <div className="cost-value">${totalDisplay}</div>
+                </div>
+              </div>
+
+              <FlashBanners />
+
+              <Button
+                disabled={
+                  !user ||
+                  requestId !== undefined ||
+                  seats !== 1 + guestNames.length
+                }
+                onClick={async () => {
+                  const res = await enqueueRegistration(
+                    s.id,
+                    seats,
+                    guestNames
+                  );
+                  setRequestId(res.request_id); // will update via SSE/poll
+                  flashInfo("Registration submitted!");
+                  // fallback poll in case SSE infra is blocked:
+                  setTimeout(async () => {
+                    if (!res.request_id) return;
+                    try {
+                      await getRequestStatus(res.request_id);
+                      refetchAll();
+                    } catch {}
+                  }, 2000);
+                }}
+              >
+                Register Now
+              </Button>
+            </>
+          ) : (
+            <>
+              {/* Already registered: manage/cancel */}
+              <FlashBanners />
+
+              {/* Show a friendly hint */}
+              <div className="info-banner" style={{ marginBottom: 8 }}>
+                You’re already registered.
+              </div>
+
+              {myActiveSeatCount < 3 ? (
+                <></>
+              ) : (
+                <div className="warning-banner" style={{ marginTop: 8 }}>
+                  You’ve reached the maximum 2 guests.
+                </div>
+              )}
+
+              {/* Cancel always targets the host registration so guest regs cascade */}
+              {hostReg && (
+                <button
+                  className="btn btn-danger"
+                  style={{ marginTop: 8 }}
+                  onClick={() =>
+                    cancelRegistration(hostReg.registration_id).then(refetchAll)
+                  }
+                >
+                  Cancel My Registration
+                </button>
+              )}
+
+              {/* Add guest: hide/disable when max reached */}
+              {myActiveSeatCount < 3 ? (
+                hostReg && (
+                  <AddGuestInline
+                    hostRegistrationId={hostReg.registration_id}
+                    currentSeats={myActiveSeatCount} // total active seats across my regs
+                    maxSeats={3} // host + up to 2 guests
+                    onAdded={refetchAll}
+                  />
+                )
+              ) : (
+                <></>
+              )}
             </>
           )}
+
           <div className="cancellation-note">
             <strong>⚠️ Cancellation Policy:</strong> Full refund before
             midnight. 50% penalty for same-day cancellation.
@@ -231,8 +277,15 @@ export default function SessionDetailPage() {
               <div className="waitlist-item" key={r.registration_id}>
                 <div className="waitlist-position">{r.waitlist_pos ?? "-"}</div>
                 <div className="waitlist-info">
-                  <div className="waitlist-name">{r.host_name}</div>
-                  <div className="waitlist-seats">{r.seats} seat(s)</div>
+                  <div className="waitlist-details">
+                    <div className="waitlist-name">{r.host_name}</div>
+                    <div className="waitlist-meta">
+                      {r.seats} seat(s)
+                      {r.guest_names?.length
+                        ? ` • ${r.guest_names.join(", ")}`
+                        : ""}
+                    </div>
+                  </div>
                 </div>
                 {r.host_user_id === user?.id && (
                   <button

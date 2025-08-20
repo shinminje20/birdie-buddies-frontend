@@ -4,7 +4,7 @@ import {
   getMyWallet,
   getMyWalletLedger,
   type WalletLedgerRow,
-  $,
+  formatDollarsFromCents,
 } from "../lib/api";
 
 /** Normalize backend kind strings to the desired display set */
@@ -27,7 +27,7 @@ function mmdd(iso: string) {
 
 /** Hide fee-hold / hold-release ledger kinds */
 function isHiddenKind(kind: string) {
-  return /^(fee[_-]?hold|hold[_-]?release)$/i.test(kind || "");
+  return /^(fee[_-]?hold|hold[_-]?release|hold)$/i.test(kind || "");
 }
 
 export default function WalletPage() {
@@ -48,19 +48,19 @@ export default function WalletPage() {
           <div>
             <div className="cost-label">Available</div>
             <div className="cost-value">
-              ${$.fromCents(w.data?.available_cents)}
+              {formatDollarsFromCents(w.data?.available_cents)}
             </div>
           </div>
-          <div>
+          {/* <div>
             <div className="cost-label">Posted</div>
             <div className="cost-value">
-              ${$.fromCents(w.data?.posted_cents)}
+              {formatDollarsFromCents(w.data?.posted_cents)}
             </div>
-          </div>
+          </div> */}
           <div>
-            <div className="cost-label">Holds</div>
+            <div className="cost-label">Waitlist Holds</div>
             <div className="cost-value">
-              ${$.fromCents(w.data?.holds_cents)}
+              {formatDollarsFromCents(w.data?.holds_cents)}
             </div>
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function WalletPage() {
             {rows.map((e: WalletLedgerRow) => {
               const label = `${displayKind(e.kind)} ${mmdd(e.created_at)}`;
               const sign = e.amount_cents >= 0 ? "+" : "-";
-              const amt = $.fromCents(Math.abs(e.amount_cents));
+              const amt = formatDollarsFromCents(Math.abs(e.amount_cents));
               return (
                 <div
                   className="waitlist-item"
@@ -92,7 +92,8 @@ export default function WalletPage() {
                     <div className="waitlist-name">{label}</div>
                   </div>
                   <div className="stat-value" style={{ marginLeft: "auto" }}>
-                    {sign}${amt}
+                    {sign}
+                    {amt}
                   </div>
                 </div>
               );

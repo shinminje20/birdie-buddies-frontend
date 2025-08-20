@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../lib/auth";
-import { getMyWallet } from "../../lib/api";
+import { getMyWallet, formatDollarsFromCents } from "../../lib/api"; // Import the utility
 
 export default function NavBar() {
   const { user, signOut } = useAuth();
@@ -22,7 +22,7 @@ export default function NavBar() {
   });
   //   const w = useQuery({ queryKey: ["wallet/me"], queryFn: getMyWallet });
 
-  const dollars = (cents?: number) => Number(cents ?? 0).toFixed(2);
+  //   const dollars = (cents?: number) => Number(cents ?? 0).toFixed(2);
 
   const onSignOut = async () => {
     try {
@@ -49,7 +49,10 @@ export default function NavBar() {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
               <path d="M21 18v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1h-9a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h9zm-9-2h10V8H12v8zm4-2.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z" />
             </svg>
-            ${wallet.isLoading ? "…" : dollars(wallet.data?.available_cents)}
+
+            {wallet.isLoading
+              ? "$…"
+              : formatDollarsFromCents(wallet.data?.available_cents)}
           </div>
 
           {/* Avatar + menu */}

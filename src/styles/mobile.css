@@ -354,6 +354,8 @@
  }
 
  .form-group {
+     display: flex;
+     flex-direction: column;
      margin-bottom: 16px;
  }
 
@@ -365,7 +367,8 @@
  }
 
  .form-input {
-     width: 100%;
+     flex: 1;
+     gap: 8px;
      padding: 10px 14px;
      border: 2px solid rgba(255, 255, 255, 0.2);
      border-radius: var(--radius-sm);
@@ -415,7 +418,7 @@
 
  .cost-display {
      display: flex;
-     justify-content: space-between;
+     justify-content: space-evenly;
      align-items: center;
      padding: 14px;
      background: rgba(255, 255, 255, 0.1);
@@ -424,7 +427,7 @@
  }
 
  .cost-label {
-     font-size: 13px;
+     font-size: 16px;
      opacity: 0.9;
  }
 
@@ -954,4 +957,22 @@
 
  .click-dd-panel.animate-in {
      animation: dd-in .16s ease-out both;
+ }
+
+ .info-banner {
+     background: #eef6ff;
+     border: 1px solid #cfe4ff;
+     color: #12497a;
+     padding: 8px 10px;
+     border-radius: 6px;
+     font-size: 0.9rem;
+ }
+
+ .warning-banner {
+     background: #fff6e6;
+     border: 1px solid #ffe0a6;
+     color: #7a4a12;
+     padding: 8px 10px;
+     border-radius: 6px;
+     font-size: 0.9rem;
  }

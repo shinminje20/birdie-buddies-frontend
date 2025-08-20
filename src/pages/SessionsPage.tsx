@@ -1,6 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import MobileShell from "../components/MobileShell/MobileShell";
-import { listSessions, type Session, $ } from "../lib/api";
+import {
+  listSessions,
+  type Session,
+  formatDollarsFromCents,
+  UTCtohhmmTimeForamt,
+} from "../lib/api";
 import { Link } from "react-router-dom";
 
 export default function SessionsPage() {
@@ -37,7 +42,7 @@ export default function SessionsPage() {
             </span>
             <h3 className="session-title">{s.title || "Badminton Session"}</h3>
             <div className="session-datetime">
-              {new Date(s.starts_at_utc).toLocaleString()}
+              {UTCtohhmmTimeForamt(new Date(s.starts_at_utc))}
             </div>
             <div className="session-stats">
               <div className="stat-item">
@@ -51,7 +56,9 @@ export default function SessionsPage() {
                 <div className="stat-label">Available</div>
               </div>
               <div className="stat-item">
-                <div className="stat-value">${$.fromCents(s.fee_cents)}</div>
+                <div className="stat-value">
+                  {formatDollarsFromCents(s.fee_cents)}
+                </div>
                 <div className="stat-label">Per Player</div>
               </div>
             </div>

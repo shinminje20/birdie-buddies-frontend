@@ -3,6 +3,7 @@ import { listSessions } from "../lib/api";
 import { Link } from "react-router-dom";
 import { useSessionSSE } from "../lib/sse";
 import { useState } from "react";
+import { formatDollarsFromCents } from "../lib/api";
 
 /** Small helper that legally uses a hook at top-level */
 function SessionSSE({ id, onEvent }: { id: string; onEvent: () => void }) {
@@ -10,10 +11,10 @@ function SessionSSE({ id, onEvent }: { id: string; onEvent: () => void }) {
   return null;
 }
 
-function cents(n?: number) {
-  if (typeof n !== "number") return "-";
-  return `$${n.toFixed(2)}`;
-}
+// function cents(n?: number) {
+//   if (typeof n !== "number") return "-";
+//   return `$${n.toFixed(2)}`;
+// }
 
 export default function Sessions() {
   const qc = useQueryClient();
@@ -113,7 +114,9 @@ export default function Sessions() {
                   <div className="info-label">Spots</div>
                 </div>
                 <div className="info-item">
-                  <div className="info-value">{cents(s.fee_cents)}</div>
+                  <div className="info-value">
+                    {formatDollarsFromCents(s.fee_cents)}
+                  </div>
                   <div className="info-label">Fee</div>
                 </div>
                 <div className="info-item">

@@ -17,6 +17,7 @@ import {
 import FlashBanners from "../components/UI/FlashBanners";
 import { flashSuccess, flashError } from "../lib/flash";
 import ClickDropdown, { type Option } from "../components/UI/ClickDropdown";
+import { formatDollarsFromCents } from "../lib/api";
 
 /* ---------------- Helpers ---------------- */
 
@@ -64,7 +65,7 @@ function UTCtohhmmTimeForamt(date: Date): string {
 }
 
 /** Cents -> dollars (string) */
-const $ = (cents?: number) => Number(cents ?? 0).toFixed(2);
+// const $ = (cents?: number) => Number(cents ?? 0).toFixed(2);
 
 function displayKind(kind: string) {
   const k = (kind || "").toLowerCase();
@@ -180,7 +181,7 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
     [dateVal, timeVal]
   );
   const fee_cents = useMemo(
-    () => Math.max(0, Number(priceDollars)),
+    () => Math.max(0, Number(priceDollars) * 100),
     [priceDollars]
   );
 
@@ -377,7 +378,9 @@ function UpdateSessionCard() {
               <div className="stat-label">Registered</div>
             </div>
             <div className="stat-item">
-              <div className="stat-value">${$(s.fee_cents)}</div>
+              <div className="stat-value">
+                {formatDollarsFromCents(s.fee_cents)}
+              </div>
               <div className="stat-label">Per Player</div>
             </div>
             <div className="stat-item">
@@ -511,7 +514,7 @@ function UsersAdminCard() {
                 <div className="waitlist-seats">{u.email}</div>
               </div>
               <div className="stat-value" style={{ marginLeft: "auto" }}>
-                ${$(u.available_cents)}
+                {formatDollarsFromCents(u.available_cents)}
               </div>
             </button>
           ))}
@@ -558,19 +561,19 @@ function UsersAdminCard() {
             <div>
               <div className="cost-label">Available</div>
               <div className="cost-value">
-                ${$(detail.data.wallet.available_cents)}
+                {formatDollarsFromCents(detail.data.wallet.available_cents)}
               </div>
             </div>
             <div>
               <div className="cost-label">Posted</div>
               <div className="cost-value">
-                ${$(detail.data.wallet.posted_cents)}
+                {formatDollarsFromCents(detail.data.wallet.posted_cents)}
               </div>
             </div>
             <div>
               <div className="cost-label">Holds</div>
               <div className="cost-value">
-                ${$(detail.data.wallet.holds_cents)}
+                {formatDollarsFromCents(detail.data.wallet.holds_cents)}
               </div>
             </div>
           </div>
@@ -608,7 +611,7 @@ function UsersAdminCard() {
                   </div>
                   <div className="stat-value" style={{ marginLeft: "auto" }}>
                     {e.amount_cents >= 0 ? "+" : "-"}$
-                    {$(Math.abs(e.amount_cents))}
+                    {formatDollarsFromCents(Math.abs(e.amount_cents))}
                   </div>
                 </div>
               ))}
@@ -687,7 +690,7 @@ function DepositBox({
       <button
         className="btn btn-secondary"
         disabled={!ok || busy}
-        onClick={() => onSubmit(Number(amount))}
+        onClick={() => onSubmit(Number(amount) * 100)}
       >
         {busy ? "Depositing…" : "Deposit"}
       </button>

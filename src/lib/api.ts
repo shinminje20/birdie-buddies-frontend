@@ -64,10 +64,26 @@ export type WalletLedgerRow = {
   created_at: string;
 }; // /wallet/me/ledger :contentReference[oaicite:6]{index=6}
 
-function dollarsFromCents(v: number | null | undefined) {
-  return Number(v ?? 0).toFixed(2);
+// Keep the existing function but make it more robust
+export function dollarsFromCents(v: number | null | undefined): string {
+  return (Number(v ?? 0) / 100).toFixed(1);
 }
-export const $ = { fromCents: dollarsFromCents };
+
+// Add a formatted version that includes the $ symbol
+export function formatDollarsFromCents(v: number | null | undefined): string {
+  return `$${dollarsFromCents(v)}`;
+}
+
+export function UTCtohhmmTimeForamt(date: Date): string {
+  let hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const ampm = hours >= 12 ? "PM" : "AM";
+
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+
+  return `${hours}:${minutes} ${ampm}`;
+}
 
 export async function http<T>(
   path: string,
