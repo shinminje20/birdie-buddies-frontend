@@ -1,5 +1,5 @@
 // src/pages/AdminPage.tsx
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import MobileShell from "../components/MobileShell/MobileShell";
@@ -12,6 +12,7 @@ import {
   adminListUsers,
   adminGetUser,
   adminDeposit,
+  newIdempotencyKey,
 } from "../lib/api";
 
 import FlashBanners from "../components/UI/FlashBanners";
@@ -457,6 +458,8 @@ function UsersAdminCard() {
     enabled: !!selected,
   });
 
+  const idemRef = useRef<string>(newIdempotencyKey());
+
   const deposit = useMutation({
     mutationFn: ({
       user_id,
@@ -464,12 +467,7 @@ function UsersAdminCard() {
     }: {
       user_id: string;
       amount_cents: number;
-    }) =>
-      adminDeposit(
-        user_id,
-        amount_cents,
-        crypto?.randomUUID?.() ?? String(Date.now())
-      ),
+    }) => adminDeposit(user_id, amount_cents, idemRef.current),
     onSuccess: () => {
       flashSuccess("✓ Deposit applied");
       if (selected) detail.refetch();
@@ -610,7 +608,7 @@ function UsersAdminCard() {
                     </div>
                   </div>
                   <div className="stat-value" style={{ marginLeft: "auto" }}>
-                    {e.amount_cents >= 0 ? "+" : "-"}$
+                    {e.amount_cents >= 0 ? "+" : "-"}
                     {formatDollarsFromCents(Math.abs(e.amount_cents))}
                   </div>
                 </div>
@@ -663,11 +661,11 @@ function UsersAdminCard() {
 function DepositBox({
   onSubmit,
   busy,
-  errorText,
-}: {
+}: //   errorText,
+{
   onSubmit: (amountDollars: number) => void;
   busy: boolean;
-  errorText: string | null;
+  //   errorText: string | null;
 }) {
   const [amount, setAmount] = useState<string>("");
   const parsed = Number(amount);
@@ -694,11 +692,11 @@ function DepositBox({
       >
         {busy ? "Depositing…" : "Deposit"}
       </button>
-      {errorText && (
+      {/* {errorText && (
         <div className="error" style={{ marginTop: 8 }}>
           {errorText}
         </div>
-      )}
+      )} */}
     </div>
   );
 }

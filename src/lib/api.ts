@@ -246,17 +246,28 @@ export type AdminDepositOut = {
   created_at: string; // ISO
 };
 
-// --- function (place with your other Admin APIs) ---
+// api.ts
+export function newIdempotencyKey(): string {
+  // Prefer Web Crypto; fall back to a tiny random if needed
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  // last-resort fallback (still very low collision risk)
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function adminDeposit(
   user_id: string,
   amount_cents: number,
-  idempotencyKey?: string
+  idempotencyKey: string // <-- required
 ) {
-  const key = idempotencyKey ?? crypto?.randomUUID?.() ?? String(Date.now());
+  if (!idempotencyKey) throw new Error("idempotencyKey is required");
   return http<AdminDepositOut>("/admin/deposits", {
     method: "POST",
-    // Pass a plain object; your http() should JSON-encode it once
-    body: { user_id, amount_cents, idempotency_key: key },
+    body: { user_id, amount_cents, idempotency_key: idempotencyKey },
   });
 }
 
