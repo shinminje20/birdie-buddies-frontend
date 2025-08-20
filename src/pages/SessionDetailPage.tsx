@@ -62,9 +62,9 @@ export default function SessionDetailPage() {
   const confirmed = (regs.data ?? []).filter((r) => r.state === "confirmed");
   const waitlist = (regs.data ?? []).filter((r) => r.state === "waitlisted");
 
-  const myReg = (regs.data ?? []).find(
-    (r) => r.host_user_id === user?.id && r.state !== "canceled"
-  );
+  //   const myReg = (regs.data ?? []).find(
+  //     (r) => r.host_user_id === user?.id && r.state !== "canceled"
+  //   );
 
   // all my active regs (confirmed or waitlisted) in this session
   const myRegs = (regs.data ?? []).filter(
