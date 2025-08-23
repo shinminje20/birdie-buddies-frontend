@@ -584,11 +584,11 @@ function UsersAdminCard() {
                 amount_cents: Math.round(Math.max(0, dollars)),
               })
             }
-            errorText={
-              deposit.isError
-                ? String((deposit.error as any)?.message || "Deposit failed")
-                : null
-            }
+            // errorText={
+            //   deposit.isError
+            //     ? String((deposit.error as any)?.message || "Deposit failed")
+            //     : null
+            // }
           />
 
           {/* Ledger (compact) */}
