@@ -7,17 +7,7 @@
       "**/node_modules/**"
     ],
     "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "redirects": [
-      {
-        "source": "/",
-        "destination": "https://mybirdies.ca",
-        "type": 301
-      }
+      { "source": "**", "destination": "/index.html" }
     ]
   }
 }
