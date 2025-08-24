@@ -17,7 +17,6 @@ import {
   getRequestStatus,
   // MARK: added
   getMyWallet,
-  type WalletSummary,
 } from "../lib/api";
 import { useRequestSSE, useSessionSSE } from "../lib/sse";
 import FlashBanners from "../components/UI/FlashBanners";
