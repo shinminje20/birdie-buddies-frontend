@@ -207,9 +207,19 @@ export async function cancelRegistration(
 }
 
 /* -------- Wallet -------- */
-export async function getMyWallet(): Promise<Wallet> {
-  return http<Wallet>("/wallet/me"); // :contentReference[oaicite:18]{index=18}
+export type WalletSummary = {
+  posted_cents: number;
+  holds_cents: number;
+  available_cents: number;
+};
+
+export function getMyWallet(): Promise<WalletSummary> {
+  return http<WalletSummary>("/wallet/me", { method: "GET" });
 }
+
+// export async function getMyWallet(): Promise<Wallet> {
+//   return http<Wallet>("/wallet/me"); // :contentReference[oaicite:18]{index=18}
+// }
 export async function getMyWalletLedger(
   limit = 50,
   beforeId?: number

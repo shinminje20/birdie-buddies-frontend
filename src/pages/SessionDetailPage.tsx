@@ -15,10 +15,13 @@ import {
   formatDollarsFromCents,
   UTCtohhmmTimeForamt,
   getRequestStatus,
+  // MARK: added
+  getMyWallet,
+  type WalletSummary,
 } from "../lib/api";
 import { useRequestSSE, useSessionSSE } from "../lib/sse";
 import FlashBanners from "../components/UI/FlashBanners";
-import { flashSuccess, flashInfo } from "../lib/flash";
+import { flashSuccess, flashInfo, flashWarn } from "../lib/flash";
 import AddGuestInline from "../components/Session/AddGuestInline";
 
 export default function SessionDetailPage() {
@@ -36,11 +39,18 @@ export default function SessionDetailPage() {
     queryFn: () => listRegistrationsForSession(id),
     enabled: !!id,
   });
+  // MARK: added — my wallet summary
+  const wallet = useQuery({
+    queryKey: ["wallet", user?.id],
+    queryFn: () => getMyWallet(),
+    enabled: !!user, // fetch only when logged in
+  });
 
   const refetchAll = useCallback(() => {
     qc.invalidateQueries({ queryKey: ["session", id] });
     qc.invalidateQueries({ queryKey: ["regs", id] });
-  }, [id, qc]);
+    qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
+  }, [id, qc, user?.id]);
 
   // live updates on session channel
   useSessionSSE(id, () => refetchAll());
@@ -91,6 +101,10 @@ export default function SessionDetailPage() {
     ? ((Number(sess.data.fee_cents) * seats) / 100).toFixed(1)
     : "0.00";
 
+  // MARK: added — affordability calculation
+  const requiredCents = sess.data ? Number(sess.data.fee_cents) * seats : 0;
+  const availableCents = wallet.data?.available_cents ?? 0;
+  const canAfford = availableCents >= requiredCents;
   if (!sess.data)
     return (
       <MobileShell>
@@ -157,9 +171,19 @@ export default function SessionDetailPage() {
                 disabled={
                   !user ||
                   requestId !== undefined ||
-                  seats !== 1 + guestNames.length
+                  seats !== 1 + guestNames.length ||
+                  (wallet.isSuccess && !canAfford) // MARK: added — block when low balance
                 }
                 onClick={async () => {
+                  // MARK: safety
+                  if (wallet.isSuccess && !canAfford) {
+                    flashWarn(
+                      `Insufficient deposit for ${seats} seat${
+                        seats > 1 ? "s" : ""
+                      }. Available: $${availableCents} • Required: $${requiredCents}. Please contact an admin to top up.`
+                    );
+                    return;
+                  }
                   const res = await enqueueRegistration(
                     s.id,
                     seats,
@@ -218,6 +242,9 @@ export default function SessionDetailPage() {
                     hostRegistrationId={hostReg.registration_id}
                     currentSeats={myActiveSeatCount} // total active seats across my regs
                     maxSeats={3} // host + up to 2 guests
+                    // MARK: optional: pass wallet info so AddGuestInline can disable if < one more seat
+                    // walletAvailableCents={availableCents}
+                    // seatFeeCents={Number(s.fee_cents)}
                     onAdded={refetchAll}
                   />
                 )

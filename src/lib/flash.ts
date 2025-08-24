@@ -1,4 +1,4 @@
-export type FlashKind = "success" | "error" | "info";
+export type FlashKind = "success" | "error" | "info" | "warning";
 
 type FlashDetail = { kind: FlashKind; message: string; timeoutMs?: number };
 
@@ -16,5 +16,13 @@ export const flashError = (message: string, timeoutMs = 4000) =>
 
 export const flashInfo = (message: string, timeoutMs = 3000) =>
   flash({ kind: "info", message, timeoutMs });
+
+export function flashWarn(message: string, timeoutMs = 8000) {
+  window.dispatchEvent(
+    new CustomEvent(FLASH_EVENT, {
+      detail: { kind: "warning", message, timeoutMs },
+    })
+  );
+}
 
 export const FLASH_EVENT = EVENT_NAME;

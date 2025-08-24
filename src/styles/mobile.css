@@ -394,6 +394,12 @@
      margin-bottom: 16px;
  }
 
+ .form-input,
+ .seat-option {
+     -webkit-appearance: none !important;
+     appearance: none;
+ }
+
  .seat-option {
      flex: 1;
      padding: 12px;

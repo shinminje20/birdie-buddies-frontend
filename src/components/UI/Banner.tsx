@@ -6,7 +6,7 @@ export default function Banner({
   onClose,
   timeoutMs = 3000,
 }: {
-  kind?: "success" | "error" | "info";
+  kind?: "success" | "error" | "info" | "warning";
   children: React.ReactNode;
   onClose?: () => void;
   timeoutMs?: number;
