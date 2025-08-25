@@ -120,7 +120,7 @@ export default function SessionDetailPage() {
           <div className="detail-meta">
             <div>{UTCtohhmmTimeForamt(new Date(s.starts_at_utc))}</div>
             <div>
-              {s.confirmed_seats}/{s.capacity} filled • ${feeDisplay} per player
+              {s.confirmed_seats}/{s.capacity} filled • {feeDisplay} per player
             </div>
             <div>Status: {s.status}</div>
           </div>
