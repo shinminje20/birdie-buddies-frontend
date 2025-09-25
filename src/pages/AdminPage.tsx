@@ -296,16 +296,16 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
         value={preregs}
         onChange={setPreregs}
         // Optionally pass a quick users index so rows show names:
-        usersIndex={useMemo(
-          () => {
-            // If you already have adminListUsers loaded, build a small map:
-            // return Object.fromEntries(listUsers.data?.items.map(u => [u.id, u]));
-            return {};
-          },
-          [
-            /* deps */
-          ]
-        )}
+        // usersIndex={useMemo(
+        //   () => {
+        //     // If you already have adminListUsers loaded, build a small map:
+        //     // return Object.fromEntries(listUsers.data?.items.map(u => [u.id, u]));
+        //     return {};
+        //   },
+        //   [
+        //     /* deps */
+        //   ]
+        // )}
       />
 
       <button
@@ -947,14 +947,14 @@ function DepositBox({
 const PreregEditor: React.FC<{
   value: PreregItem[];
   onChange: (v: PreregItem[]) => void;
-  usersIndex?: Record<string, { id: string; name: string; email: string }>; // optional, to display names
-}> = ({ value, onChange, usersIndex = {} }) => {
-  const [draft, setDraft] = React.useState<PreregItem>({
-    user_id: "",
-    name: "",
-    seats: 1,
-    // guest_names: [],
-  });
+  // usersIndex?: Record<string, { id: string; name: string; email: string }>; // optional, to display names
+}> = ({ value, onChange }) => {
+  // const [draft, setDraft] = React.useState<PreregItem>({
+  //   user_id: "",
+  //   name: "",
+  //   seats: 1,
+  //   // guest_names: [],
+  // });
 
   const add = (draft: PreregItem) => {
     if (!draft.user_id) return;
