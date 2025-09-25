@@ -1,7 +1,12 @@
 // src/pages/AdminPage.tsx
 import React, { useMemo, useState, useRef } from "react";
-
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import MobileShell from "../components/MobileShell/MobileShell";
 import {
   // sessions
@@ -13,6 +18,9 @@ import {
   adminGetUser,
   adminDeposit,
   newIdempotencyKey,
+  adminPatchUser,
+  adminDeleteUser,
+  type AdminUserRow,
 } from "../lib/api";
 
 import FlashBanners from "../components/UI/FlashBanners";
@@ -24,6 +32,16 @@ import { formatDollarsFromCents } from "../lib/api";
 
 type DateOption = { label: string; value: string }; // YYYY-MM-DD
 type TimeOption = { label: string; value: string }; // HH:mm (24h)
+type PreregItem = {
+  user_id: string;
+  name: string;
+  seats: Number;
+  // guest_names: string[]; // 0..2
+};
+
+// function assertSeatsMatchGuests(i: PreregItem) {
+//   return i.seats === 1 + (i.guest_names?.length ?? 0);
+// }
 
 /** Build "Aug 20, Wednesday" for the next N days */
 function buildDateOptions(days = 21): DateOption[] {
@@ -64,9 +82,6 @@ function UTCtohhmmTimeForamt(date: Date): string {
 
   return `${hours}:${minutes} ${ampm}`;
 }
-
-/** Cents -> dollars (string) */
-// const $ = (cents?: number) => Number(cents ?? 0).toFixed(2);
 
 function displayKind(kind: string) {
   const k = (kind || "").toLowerCase();
@@ -156,6 +171,7 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
   const [timezone] = useState("America/Vancouver"); // fixed per your UX
   const [capacity, setCapacity] = useState(16);
   const [priceDollars, setPriceDollars] = useState(13.5);
+  const [preregs, setPreregs] = useState<PreregItem[]>([]);
 
   /** Default time slots (edit as needed) */
   const DEFAULT_TIMES: TimeOption[] = [
@@ -185,13 +201,35 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
     () => Math.max(0, Number(priceDollars) * 100),
     [priceDollars]
   );
-
+  const navigate = useNavigate();
   const create = useMutation({
-    mutationFn: adminCreateSession,
-    onSuccess: () => {
+    mutationFn: async (input: any) => {
+      return adminCreateSession({
+        ...input,
+        preregistrations: preregs.map((p) => ({
+          user_id: p.user_id,
+          seats: p.seats,
+          // guest_names: p.guest_names,
+        })),
+      });
+    },
+    onSuccess: (data) => {
       flashSuccess("✓ Session created!");
       onCreated();
+      setPreregs([]);
+      navigate(`/admin/sessions/${data.id}`);
     },
+
+    // In case I need to show the result to the admin
+
+    // onSuccess: (data) => {
+    //   qc.invalidateQueries({ queryKey: ["sessions"] });
+    //   // show results to admin
+    //   const ok = data.prereg_result.filter(r => r.state !== "rejected").length;
+    //   const rej = data.prereg_result.filter(r => r.state === "rejected").length;
+    //   alert(`Session created. Pre-reg: ${ok} ok, ${rej} rejected.`);
+    //   setPreregs([]);
+    // },
     onError: (e: any) => flashError(String(e?.message || "Create failed")),
   });
 
@@ -254,6 +292,22 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
         />
       </div>
 
+      <PreregEditor
+        value={preregs}
+        onChange={setPreregs}
+        // Optionally pass a quick users index so rows show names:
+        usersIndex={useMemo(
+          () => {
+            // If you already have adminListUsers loaded, build a small map:
+            // return Object.fromEntries(listUsers.data?.items.map(u => [u.id, u]));
+            return {};
+          },
+          [
+            /* deps */
+          ]
+        )}
+      />
+
       <button
         className="btn btn-primary"
         disabled={create.isPending}
@@ -267,7 +321,7 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
           })
         }
       >
-        {create.isPending ? "Creating…" : "Create Session"}
+        {create.isPending ? "Creating…" : "Complete"}
       </button>
       {create.isError && (
         <div className="error" style={{ marginTop: 8 }}>
@@ -442,10 +496,19 @@ function UpdateSessionCard() {
 }
 
 /* ---------------- Users (list + detail + deposit) ---------------- */
+type EditState = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status?: "active" | "disabled";
+  is_admin?: boolean;
+};
 
 function UsersAdminCard() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
+  const [editing, setEditing] = useState<EditState | null>(null);
 
   const list = useQuery({
     queryKey: ["admin-users", q],
@@ -459,6 +522,19 @@ function UsersAdminCard() {
   });
 
   const idemRef = useRef<string>(newIdempotencyKey());
+
+  const qc = useQueryClient();
+
+  const patchUserMut = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) =>
+      adminPatchUser(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+
+  const deleteUserMut = useMutation({
+    mutationFn: (id: string) => adminDeleteUser(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
 
   const deposit = useMutation({
     mutationFn: ({
@@ -501,20 +577,62 @@ function UsersAdminCard() {
 
         <div>
           {users.map((u) => (
-            <button
-              key={u.id}
-              className={`waitlist-item ${selected === u.id ? "active" : ""}`}
-              style={{ width: "100%", textAlign: "left" }}
-              onClick={() => setSelected(u.id)}
-            >
-              <div className="waitlist-info">
-                <div className="waitlist-name">{u.name}</div>
-                <div className="waitlist-seats">{u.email}</div>
+            <div>
+              <button
+                key={u.id}
+                className={`waitlist-item ${selected === u.id ? "active" : ""}`}
+                style={{ width: "100%", textAlign: "left" }}
+                onClick={() => setSelected(u.id)}
+              >
+                <div className="waitlist-info">
+                  <div className="waitlist-name">{u.name}</div>
+                  <div className="waitlist-seats">{u.email}</div>
+                </div>
+                <div className="stat-value" style={{ marginLeft: "auto" }}>
+                  {formatDollarsFromCents(u.available_cents)}
+                </div>
+              </button>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  justifyContent: "space-around",
+                  marginBottom: "12px",
+                }}
+              >
+                <button
+                  className="btn btn-secondary"
+                  style={{ width: "48%" }}
+                  onClick={() =>
+                    setEditing({
+                      id: u.id,
+                      name: u.name ?? "",
+                      email: u.email ?? "",
+                      phone: u.phone ?? "",
+                      status: (u.status as "active" | "disabled") ?? "active",
+                      is_admin: !!u.is_admin,
+                    })
+                  }
+                >
+                  Edit
+                </button>
+                <button
+                  className="btn btn-danger"
+                  style={{ width: "48%" }}
+                  onClick={() => {
+                    if (
+                      confirm(
+                        "Soft delete this user? They will be disabled and hidden."
+                      )
+                    ) {
+                      deleteUserMut.mutate(u.id);
+                    }
+                  }}
+                >
+                  Delete
+                </button>
               </div>
-              <div className="stat-value" style={{ marginLeft: "auto" }}>
-                {formatDollarsFromCents(u.available_cents)}
-              </div>
-            </button>
+            </div>
           ))}
           {list.isLoading && <div className="skeleton" />}
           {list.error && <div className="error">Failed to load users.</div>}
@@ -578,12 +696,12 @@ function UsersAdminCard() {
 
           <DepositBox
             busy={deposit.isPending}
-            onSubmit={(dollars) =>
+            onSubmit={(dollars) => {
               deposit.mutate({
                 user_id: selected,
-                amount_cents: Math.round(Math.max(0, dollars)),
-              })
-            }
+                amount_cents: dollars,
+              });
+            }}
             // errorText={
             //   deposit.isError
             //     ? String((deposit.error as any)?.message || "Deposit failed")
@@ -654,6 +772,131 @@ function UsersAdminCard() {
           </div>
         </div>
       )}
+      {editing && (
+        <div className="modal-overlay" onClick={() => setEditing(null)}>
+          <div
+            className="modal-card animate-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="section-title" style={{ marginBottom: 8 }}>
+              Edit user
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Name</label>
+              <input
+                className="form-input"
+                placeholder="Name"
+                value={editing.name ?? ""}
+                onChange={(e) =>
+                  setEditing({ ...editing, name: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Email</label>
+              <input
+                className="form-input"
+                placeholder="Email"
+                value={editing.email ?? ""}
+                onChange={(e) =>
+                  setEditing({ ...editing, email: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Phone</label>
+              <input
+                className="form-input"
+                placeholder="Phone"
+                value={editing.phone ?? ""}
+                onChange={(e) =>
+                  setEditing({ ...editing, phone: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Status</label>
+              <select
+                className="form-input"
+                value={editing.status ?? "active"}
+                onChange={(e) =>
+                  setEditing({
+                    ...editing,
+                    status: e.target.value as "active" | "disabled",
+                  })
+                }
+              >
+                <option value="active">active</option>
+                <option value="disabled">disabled</option>
+              </select>
+            </div>
+
+            <div
+              className="form-group"
+              style={{ display: "flex", alignItems: "center", gap: 8 }}
+            >
+              <input
+                id="is_admin"
+                type="checkbox"
+                checked={!!editing.is_admin}
+                onChange={(e) =>
+                  setEditing({ ...editing, is_admin: e.target.checked })
+                }
+              />
+              <label
+                htmlFor="is_admin"
+                className="form-label"
+                style={{ margin: 0 }}
+              >
+                Admin
+              </label>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setEditing(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  const { id, ...body } = editing!;
+                  patchUserMut.mutate(
+                    {
+                      id,
+                      body: {
+                        name: body.name ?? undefined,
+                        email: body.email ?? undefined,
+                        phone: body.phone ?? undefined,
+                        status: body.status ?? undefined,
+                        is_admin: body.is_admin ?? undefined,
+                      },
+                    },
+                    {
+                      onSuccess: () => setEditing(null),
+                      onError: (err: any) => {
+                        alert(
+                          typeof err?.message === "string"
+                            ? err.message
+                            : "Failed to update user"
+                        );
+                      },
+                    }
+                  );
+                }}
+              >
+                {patchUserMut.isPending ? "Saving…" : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -669,7 +912,7 @@ function DepositBox({
 }) {
   const [amount, setAmount] = useState<string>("");
   const parsed = Number(amount);
-  const ok = !Number.isNaN(parsed) && parsed > 0;
+  const ok = !Number.isNaN(parsed);
 
   return (
     <div className="detail-container" style={{ marginTop: 12 }}>
@@ -678,7 +921,7 @@ function DepositBox({
         <input
           className="form-input"
           type="number"
-          min={0}
+          // min={0}
           step="0.50"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
@@ -700,3 +943,251 @@ function DepositBox({
     </div>
   );
 }
+
+const PreregEditor: React.FC<{
+  value: PreregItem[];
+  onChange: (v: PreregItem[]) => void;
+  usersIndex?: Record<string, { id: string; name: string; email: string }>; // optional, to display names
+}> = ({ value, onChange, usersIndex = {} }) => {
+  const [draft, setDraft] = React.useState<PreregItem>({
+    user_id: "",
+    name: "",
+    seats: 1,
+    // guest_names: [],
+  });
+
+  const add = (draft: PreregItem) => {
+    if (!draft.user_id) return;
+    // if (!assertSeatsMatchGuests(draft)) {
+    //   alert("Seats must equal 1 (host) + number of guests.");
+    //   return;
+    // }
+    onChange([...value, draft]);
+    // setDraft({ user_id: "", name: "", seats: 1 });
+  };
+
+  const remove = (idx: number) => {
+    const next = value.slice();
+    next.splice(idx, 1);
+    onChange(next);
+  };
+
+  // --- Picker state (reuses existing adminListUsers API) ---
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [pickerQuery, setPickerQuery] = React.useState("");
+  const [limit, setLimit] = React.useState(20);
+  const [offset, setOffset] = React.useState(0);
+
+  const usersQ = useQuery({
+    queryKey: ["admin-users-picker", pickerQuery, limit, offset],
+    queryFn: async () => adminListUsers(pickerQuery, limit, offset),
+    placeholderData: keepPreviousData,
+    staleTime: 30_000,
+  });
+
+  const total = usersQ.data?.total ?? 0;
+  const items = usersQ.data?.items ?? [];
+  const canPrev = offset > 0;
+  const canNext = offset + limit < total;
+  return (
+    <div
+      className="card"
+      style={{ padding: 12, marginTop: 12, position: "relative" }}
+    >
+      <div className="section-header">
+        <div className="section-title">Preregistrations</div>
+        {/* <span className="section-count">{value.length}</span> */}
+      </div>
+
+      {/* Draft row */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 8,
+          alignItems: "center",
+        }}
+      >
+        {/* <input
+          className="form-input"
+          placeholder="Name"
+          value={draft.name}
+          onChange={(e) =>
+            setDraft({ ...draft, user_id: e.target.value.trim() })
+          }
+        /> */}
+
+        {/* <select
+          className="form-input"
+          value={draft.seats}
+          onChange={(e) =>
+            setDraft({ ...draft, seats: Number(e.target.value) as 1 | 2 | 3 })
+          }
+        >
+          <option value={1}>1 seat</option>
+          <option value={2}>2 seats</option>
+          <option value={3}>3 seats</option>
+        </select> */}
+
+        {/* <input
+          className="form-input"
+          placeholder="Guest names (comma separated, 0..2)"
+          value={(draft.guest_names || []).join(", ")}
+          onChange={(e) => {
+            const parts = e.target.value
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
+            setDraft({
+              ...draft,
+              guest_names: parts.slice(0, 2),
+              seats: parts.length + 1,
+            });
+          }}
+        /> */}
+
+        {/* Picker trigger */}
+        <div style={{ position: "relative", width: "100%" }}>
+          <button
+            // type="button"
+            className="btn btn-secondary"
+            onClick={() => setPickerOpen((v) => !v)}
+          >
+            Pick users
+          </button>
+
+          {pickerOpen && (
+            <div className="popover">
+              <div className="popover-panel">
+                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                  <input
+                    autoFocus
+                    className="form-input"
+                    placeholder="Search name or email…"
+                    value={pickerQuery}
+                    onChange={(e) => {
+                      setPickerQuery(e.target.value);
+                      setOffset(0); // reset to first page when search changes
+                    }}
+                  />
+                  <select
+                    className="form-input"
+                    style={{ maxWidth: 120 }}
+                    value={limit}
+                    onChange={(e) => {
+                      setLimit(Number(e.target.value));
+                      setOffset(0);
+                    }}
+                  >
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                </div>
+
+                <div style={{ maxHeight: 260, overflow: "auto" }}>
+                  {usersQ.isLoading ? (
+                    <div className="muted">Loading…</div>
+                  ) : usersQ.isError ? (
+                    <div className="danger">Failed to load users</div>
+                  ) : items.length ? (
+                    items.map((u: AdminUserRow) => (
+                      <button
+                        key={u.id}
+                        className="list-row"
+                        style={{ width: "100%", textAlign: "left" }}
+                        onClick={() => {
+                          add({
+                            user_id: u.id,
+                            name: u.name,
+                            seats: 1,
+                          });
+                          setPickerOpen(false);
+                        }}
+                        title={u.id}
+                      >
+                        <div className="list-title">
+                          {u.is_admin ? "[Admin] • " : ""}{" "}
+                          {u.name || "(no name)"}
+                        </div>
+                        <div className="list-subtitle">{u.email || "—"}</div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="muted">No users</div>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 8,
+                    gap: 8,
+                  }}
+                >
+                  <div className="muted">
+                    {offset + 1}-{Math.min(offset + limit, total)} of {total}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={!canPrev || usersQ.isFetching}
+                      onClick={() => setOffset((o) => Math.max(0, o - limit))}
+                    >
+                      Prev
+                    </button>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={!canNext || usersQ.isFetching}
+                      onClick={() => setOffset((o) => o + limit)}
+                    >
+                      Next
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => setPickerOpen(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        {/* <button className="btn" onClick={add}>
+          Add
+        </button> */}
+      </div>
+
+      {/* Current prereg list */}
+      {value.length > 0 && (
+        <table style={{ width: "100%", marginTop: 12 }}>
+          <thead>
+            <tr>
+              <th>User</th>
+              {/* <th>Seats</th>
+              <th>Guests</th> */}
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {value.map((it, idx) => (
+              <tr key={idx}>
+                <td title={it.user_id}>{it.name}</td>
+                {/* <td>{it.seats}</td> */}
+                {/* <td>{it.guest_names?.join(", ") || "-"}</td> */}
+                <td>
+                  <button className="btn" onClick={() => remove(idx)}>
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+};

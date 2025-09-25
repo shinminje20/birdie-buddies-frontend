@@ -95,10 +95,10 @@ export default function SessionDetailPage() {
 
   const feeDisplay = sess.data
     ? formatDollarsFromCents(sess.data.fee_cents)
-    : "0.00";
+    : "0.0";
   const totalDisplay = sess.data
-    ? ((Number(sess.data.fee_cents) * seats) / 100).toFixed(1)
-    : "0.00";
+    ? formatDollarsFromCents(sess.data.fee_cents * seats)
+    : "0.0";
 
   // MARK: added — affordability calculation
   const requiredCents = sess.data ? Number(sess.data.fee_cents) * seats : 0;
@@ -130,8 +130,9 @@ export default function SessionDetailPage() {
           {!hasMyReg ? (
             <>
               <h3 className="registration-title">Register</h3>
+              <FlashBanners />
               <div className="form-group">
-                <label className="form-label">Seats (1 + up to 2 guests)</label>
+                {/* <label className="form-label">Seats (1 + up to 2 guests)</label> */}
                 <SeatsSelector value={seats} onChange={setSeats} />
               </div>
 
@@ -160,18 +161,16 @@ export default function SessionDetailPage() {
               <div className="cost-display">
                 <div>
                   <div className="cost-label">Total</div>
-                  <div className="cost-value">${totalDisplay}</div>
+                  <div className="cost-value">{totalDisplay}</div>
                 </div>
               </div>
-
-              <FlashBanners />
 
               <Button
                 disabled={
                   !user ||
                   requestId !== undefined ||
-                  seats !== 1 + guestNames.length ||
-                  (wallet.isSuccess && !canAfford) // MARK: added — block when low balance
+                  seats !== 1 + guestNames.length
+                  // (wallet.isSuccess && !canAfford) // MARK: added — block when low balance
                 }
                 onClick={async () => {
                   // MARK: safety
@@ -179,7 +178,7 @@ export default function SessionDetailPage() {
                     flashWarn(
                       `Insufficient deposit for ${seats} seat${
                         seats > 1 ? "s" : ""
-                      }. Available: $${availableCents} • Required: $${requiredCents}. Please contact an admin to top up.`
+                      }. Required: ${totalDisplay}. Please contact an admin to top up.`
                     );
                     return;
                   }

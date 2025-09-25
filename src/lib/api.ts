@@ -404,3 +404,107 @@ export async function addGuest(
     waitlist_pos: raw?.waitlist_pos ?? raw?.pos ?? null,
   } as GuestAddOut;
 }
+
+// =====================
+// Admin prereg: DTOs
+// =====================
+
+export type UUID = string;
+
+export type AdminPreregItemIn = {
+  user_id: UUID;
+  seats: 1 | 2 | 3;
+  /** 0..2 names; seats must equal 1 + guest_names.length */
+  guest_names?: string[];
+  /** optional idempotency key; if omitted, server may treat as best-effort */
+  idempotency_key?: string;
+};
+
+export type AdminPreregResultOut = {
+  user_id: UUID;
+  registration_id?: UUID | null;
+  state: "confirmed" | "waitlisted" | "rejected";
+  waitlist_pos?: number | null;
+  error?: string | null;
+};
+
+// Your file already defines `Session` and `adminCreateSession`.
+// We'll add a new input shape that extends the existing create payload with preregs:
+export type SessionCreateInWithPrereg = {
+  title?: string | null;
+  /** ISO string, must be UTC & tz-aware per backend contract */
+  starts_at_utc: string;
+  /** IANA TZ name, e.g. "America/Vancouver" */
+  timezone: string;
+  capacity: number;
+  fee_cents: number;
+  preregistrations?: AdminPreregItemIn[];
+};
+
+export type SessionCreateWithPreregOut = {
+  session: Session;
+  prereg_result: AdminPreregResultOut[];
+};
+
+/**
+ * New (non-breaking) variant: create a session and optionally preregister users
+ * Returns { session, prereg_result }.
+ * Keep your existing adminCreateSession() for places that don't use prereg.
+ */
+export async function adminCreateSessionWithPrereg(
+  input: SessionCreateInWithPrereg
+): Promise<SessionCreateWithPreregOut> {
+  const res = await fetch(`${BASE}/admin/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    // surface backend errors (409, 403, etc.) to caller
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+  return (await res.json()) as SessionCreateWithPreregOut;
+}
+
+// =====================
+// Admin: user management
+// =====================
+
+export type AdminUserPatchIn = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  status?: "active" | "disabled";
+  is_admin?: boolean;
+};
+
+/** PATCH /admin/users/{id} — 204 on success */
+export async function adminPatchUser(
+  userId: UUID,
+  body: AdminUserPatchIn
+): Promise<void> {
+  const res = await fetch(`${BASE}/admin/users/${userId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+}
+
+/** DELETE /admin/users/{id} — soft delete, 204 on success */
+export async function adminDeleteUser(userId: UUID): Promise<void> {
+  const res = await fetch(`${BASE}/admin/users/${userId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `HTTP ${res.status}`);
+  }
+}

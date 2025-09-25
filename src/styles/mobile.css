@@ -370,7 +370,7 @@
      flex: 1;
      gap: 8px;
      padding: 10px 14px;
-     border: 2px solid rgba(255, 255, 255, 0.2);
+     border: 2px solid rgba(94, 94, 94, 0.033);
      border-radius: var(--radius-sm);
      background: rgba(255, 255, 255, 0.1);
      color: black;
@@ -384,7 +384,7 @@
 
  .form-input:focus {
      outline: none;
-     border-color: white;
+     border-color: var(--primary);
      background: rgba(255, 255, 255, 0.2);
  }
 
@@ -462,13 +462,27 @@
  }
 
  .btn-primary {
-     background: white;
+     background-color: var(--white);
      color: var(--primary);
+     border: 1px solid var(--primary);
+
+ }
+
+ .btn-primary:active {
+     background-color: var(--primary);
+     color: var(--white);
  }
 
  .btn-secondary {
-     background: var(--light);
-     color: var(--dark);
+     background-color: var(--white);
+     border: 1px solid var(--secondary);
+     color: var(--secondary);
+ }
+
+ .btn-secondary:active {
+     background-color: var(--secondary);
+     border: 1px solid var(--secondary);
+     color: var(--white);
  }
 
  .btn-danger {
@@ -842,6 +856,11 @@
      color: #e6eeff;
  }
 
+ .banner-warning {
+     background: red;
+     color: #ffe6e6;
+ }
+
  /* blue-ish */
 
  .banner-icon {
@@ -981,4 +1000,65 @@
      padding: 8px 10px;
      border-radius: 6px;
      font-size: 0.9rem;
+ }
+
+ /* Modal overlay & card – aligned with theme */
+ .modal-overlay {
+     position: fixed;
+     inset: 0;
+     background: rgba(0, 0, 0, 0.35);
+     display: grid;
+     place-items: center;
+     padding: 16px;
+     z-index: 1000;
+     backdrop-filter: blur(4px);
+     animation: fadeIn 0.2s ease-out;
+ }
+
+ .modal-card {
+     width: 100%;
+     max-width: 480px;
+     /* keep mobile-friendly */
+     background: rgba(255, 255, 255, 0.95);
+     backdrop-filter: blur(10px);
+     border-radius: var(--radius-lg);
+     box-shadow: var(--shadow-lg);
+     border: 1px solid var(--border);
+     padding: 20px 16px;
+     animation: slideIn 0.3s ease-out;
+     /* reuse existing keyframe */
+ }
+
+ /* Optional smooth fade for overlay */
+ @keyframes fadeIn {
+     from {
+         opacity: 0;
+     }
+
+     to {
+         opacity: 1;
+     }
+ }
+
+ /* Popover shell */
+ .popover {
+     position: relative;
+     place-items: center;
+     /* right: 0; */
+     /* top: 40px; */
+     z-index: 1000;
+     backdrop-filter: blur(6px);
+     animation: fadeIn 0.2s ease-out;
+ }
+
+ .popover-panel {
+     width: 100%;
+     max-width: calc(100vw - 32px);
+     background: rgb(255, 255, 255);
+     border: 2px solid var(--border);
+     border-color: var(--primary);
+     border-radius: var(--radius-lg);
+     box-shadow: var(--shadow-lg);
+     padding: 12px;
+
  }
