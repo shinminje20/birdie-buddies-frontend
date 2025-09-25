@@ -64,6 +64,9 @@ export default function SessionsPage() {
             </div>
           </Link>
         ))}
+        {!isLoading && (data?.length ?? 0) === 0 && (
+          <div className="empty-state">No Sessions yet.</div>
+        )}
       </div>
     </MobileShell>
   );
