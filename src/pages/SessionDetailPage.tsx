@@ -71,6 +71,9 @@ export default function SessionDetailPage() {
   const confirmed = (regs.data ?? []).filter((r) => r.state === "confirmed");
   const waitlist = (regs.data ?? []).filter((r) => r.state === "waitlisted");
 
+  const [showAll, setShowAll] = useState(false);
+  const confirmedTopSix = showAll ? confirmed : confirmed.slice(0, 6);
+
   //   const myReg = (regs.data ?? []).find(
   //     (r) => r.host_user_id === user?.id && r.state !== "canceled"
   //   );
@@ -138,10 +141,11 @@ export default function SessionDetailPage() {
 
               {seats >= 2 && (
                 <div className="form-group">
-                  <label className="form-label">Guest 1 Name</label>
+                  <label className="form-label-dark">Guest 1 Name</label>
                   <input
-                    className="form-input"
+                    className="form-input-dark"
                     value={guest1}
+                    placeholder="guest name"
                     onChange={(e) => setGuest1(e.target.value)}
                   />
                 </div>
@@ -149,10 +153,11 @@ export default function SessionDetailPage() {
 
               {seats >= 3 && (
                 <div className="form-group">
-                  <label className="form-label">Guest 2 Name</label>
+                  <label className="form-label-dark">Guest 2 Name</label>
                   <input
-                    className="form-input"
+                    className="form-input-dark"
                     value={guest2}
+                    placeholder="guest name"
                     onChange={(e) => setGuest2(e.target.value)}
                   />
                 </div>
@@ -265,7 +270,7 @@ export default function SessionDetailPage() {
             <span className="participant-count">{confirmed.length}</span>
           </div>
           <div>
-            {confirmed.map((r: RegRow) => (
+            {confirmedTopSix.map((r: RegRow) => (
               <div className="participant-card" key={r.registration_id}>
                 <div className="participant-info">
                   <div className="participant-avatar">
@@ -273,16 +278,24 @@ export default function SessionDetailPage() {
                   </div>
                   <div className="participant-details">
                     <div className="participant-name">
-                      {r.host_name}
+                      {/* {r.seats} seat(s) */}
+                      {r.guest_names?.length
+                        ? `(Guest): ${r.guest_names.join(", ")}`
+                        : ""}
+                    </div>
+                    <div
+                      className={
+                        r.guest_names?.length
+                          ? "participant-meta"
+                          : "participant-name"
+                      }
+                    >
+                      {r.guest_names?.length
+                        ? `invited by: ${r.host_name}`
+                        : r.host_name}
                       {r.host_user_id === user?.id ? (
                         <span className="guest-badge"> You</span>
                       ) : null}
-                    </div>
-                    <div className="participant-meta">
-                      {r.seats} seat(s)
-                      {r.guest_names?.length
-                        ? ` • ${r.guest_names.join(", ")}`
-                        : ""}
                     </div>
                   </div>
                 </div>
@@ -290,6 +303,14 @@ export default function SessionDetailPage() {
             ))}
           </div>
         </div>
+        {confirmed.length > 6 && (
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowAll((s) => !s)}
+          >
+            {showAll ? "Show less" : `Show all ${confirmed.length}`}
+          </button>
+        )}
 
         {/* Waitlist */}
         <div className="participants-section">
