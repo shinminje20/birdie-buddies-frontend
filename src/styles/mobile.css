@@ -361,6 +361,15 @@
 
  .form-label {
      display: block;
+     color: black;
+     margin-bottom: 8px;
+     font-weight: 500;
+     font-size: 13px;
+ }
+
+ .form-label-dark {
+     display: block;
+     color: #ffffffee;
      margin-bottom: 8px;
      font-weight: 500;
      font-size: 13px;
@@ -370,7 +379,7 @@
      flex: 1;
      gap: 8px;
      padding: 10px 14px;
-     border: 2px solid rgba(94, 94, 94, 0.033);
+     border: 2px solid rgba(94, 94, 94, 0.3);
      border-radius: var(--radius-sm);
      background: rgba(255, 255, 255, 0.1);
      color: black;
@@ -378,9 +387,32 @@
      transition: all 0.2s;
  }
 
+ .form-input-dark {
+     flex: 1;
+     gap: 8px;
+     padding: 10px 14px;
+     border: 2px solid #ffffff4d;
+     border-radius: var(--radius-sm);
+     background: #ffffffee;
+     color: black;
+     font-size: 16px;
+     transition: all 0.2s;
+ }
+
+ .form-input-dark:focus {
+     outline: none;
+     border-color: var(--primary);
+     background: rgb(255, 255, 255);
+ }
+
  .form-input::placeholder {
      color: lightgray;
  }
+
+ .form-input-dark::placeholder {
+     color: lightgray;
+ }
+
 
  .form-input:focus {
      outline: none;

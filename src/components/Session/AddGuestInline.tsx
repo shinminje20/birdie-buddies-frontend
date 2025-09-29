@@ -47,13 +47,20 @@ export default function AddGuestInline({
   };
 
   return (
-    <div className="detail-container" style={{ marginTop: 12 }}>
+    <div
+      className="detail-container"
+      style={{ marginTop: 12, border: "1px solid var(--primary)" }}
+    >
       <div className="form-group">
         <label className="form-label">
-          Add Guest ({remainingGuests} remaining)
+          <b>{remainingGuests}</b> guest seats remaining
         </label>
         <div
-          style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 8 }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
         >
           <input
             className="form-input"
