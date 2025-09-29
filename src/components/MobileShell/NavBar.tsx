@@ -61,7 +61,7 @@ export default function NavBar() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
           >
-            {user?.name?.slice(0, 2).toUpperCase() ?? "??"}
+            {user?.name?.slice(1, 3).toUpperCase() ?? "??"}
           </button>
 
           {open && (

@@ -136,7 +136,7 @@ export default function SessionDetailPage() {
             <>
               <label className="registration-title">Register</label>
               <FlashBanners />
-              <div className="form-group">
+              <div className="seat-selection">
                 {/* <label className="form-label">Seats (1 + up to 2 guests)</label> */}
                 <SeatsSelector value={seats} onChange={setSeats} />
               </div>
