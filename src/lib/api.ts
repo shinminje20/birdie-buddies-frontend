@@ -174,6 +174,23 @@ export async function listRegistrationsForSession(
   return http<RegRow[]>(`/sessions/${sessionId}/registrations`); // :contentReference[oaicite:13]{index=13}
 }
 
+// TODO: Lazy loading
+// type PageResult = { rows: RegRow[]; nextOffset?: number };
+// export async function listRegistrationsForSession(
+//   sessionId: string,
+//   limit: number,
+//   offset = 0
+// ): Promise<PageResult> {
+//   const params = new URLSearchParams({
+//     limit: String(limit),
+//     offset: String(offset),
+//   });
+//   const rows = await http<RegRow[]>(
+//     `/sessions/${sessionId}/registrations?${params}`
+//   );
+//   return { rows, nextOffset: rows.length < limit ? undefined : offset + limit };
+// }
+
 export async function myRegistrations(): Promise<RegRow[]> {
   return http<RegRow[]>("/me/registrations"); // :contentReference[oaicite:14]{index=14}
 }
