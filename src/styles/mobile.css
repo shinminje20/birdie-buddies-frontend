@@ -301,7 +301,7 @@
  .detail-header {
      padding-bottom: 20px;
      border-bottom: 2px solid var(--border);
-     margin-bottom: 24px;
+     margin-bottom: 20px;
  }
 
  .detail-info h1 {
@@ -314,7 +314,7 @@
  .detail-meta {
      display: flex;
      flex-direction: column;
-     gap: 8px;
+     gap: 4px;
  }
 
  .meta-item {
@@ -331,12 +331,21 @@
  }
 
  /* Registration Card - Mobile Optimized */
+
+ .session-header {
+     font-size: x-large;
+     font-weight: bold;
+     padding-bottom: 8px;
+ }
+
  .registration-header {
-     background: linear-gradient(135deg, #667eea 0% 100%);
+     display: flex;
+     flex-direction: column;
+     background: #667eea;
      border-radius: var(--radius);
      padding: 20px;
      color: white;
-     margin-bottom: 24px;
+     margin-bottom: 20px;
  }
 
  .registration-card {
@@ -344,19 +353,19 @@
      border-radius: var(--radius);
      padding: 20px;
      color: white;
-     margin-bottom: 24px;
+     margin-bottom: 20px;
  }
 
  .registration-title {
      font-size: 18px;
      font-weight: 600;
-     margin-bottom: 16px;
+
  }
 
  .form-group {
      display: flex;
      flex-direction: column;
-     margin-bottom: 16px;
+     margin-bottom: 8px;
  }
 
  .form-label {

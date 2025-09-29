@@ -119,7 +119,9 @@ export default function SessionDetailPage() {
     <MobileShell>
       <div className="detail-container">
         <div className="registration-header">
-          <h1>{s.title || "Badminton Session"}</h1>
+          <label className="session-header">
+            {s.title || "Badminton Session"}
+          </label>
           <div className="detail-meta">
             <div>{UTCtohhmmTimeForamt(new Date(s.starts_at_utc))}</div>
             <div>
@@ -132,7 +134,7 @@ export default function SessionDetailPage() {
         <div className="registration-card">
           {!hasMyReg ? (
             <>
-              <h3 className="registration-title">Register</h3>
+              <label className="registration-title">Register</label>
               <FlashBanners />
               <div className="form-group">
                 {/* <label className="form-label">Seats (1 + up to 2 guests)</label> */}

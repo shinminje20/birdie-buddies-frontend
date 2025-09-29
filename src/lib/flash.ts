@@ -8,13 +8,13 @@ export function flash(detail: FlashDetail) {
   window.dispatchEvent(new CustomEvent<FlashDetail>(EVENT_NAME, { detail }));
 }
 
-export const flashSuccess = (message: string, timeoutMs = 3000) =>
+export const flashSuccess = (message: string, timeoutMs = 6000) =>
   flash({ kind: "success", message, timeoutMs });
 
-export const flashError = (message: string, timeoutMs = 4000) =>
+export const flashError = (message: string, timeoutMs = 6000) =>
   flash({ kind: "error", message, timeoutMs });
 
-export const flashInfo = (message: string, timeoutMs = 3000) =>
+export const flashInfo = (message: string, timeoutMs = 6000) =>
   flash({ kind: "info", message, timeoutMs });
 
 export function flashWarn(message: string, timeoutMs = 8000) {
