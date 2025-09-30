@@ -1,19 +1,30 @@
-// src/lib/auth.tsx
+// src/lib/auth.tsx - Updated with new flow
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { me, requestOtp, verifyOtp, type User } from "./api";
-import { logout } from "./api";
+import {
+  me,
+  checkEmail,
+  login,
+  signup,
+  verifyOtp as verifyOtpApi,
+  logout,
+  type User,
+} from "./api";
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
-  signOut: () => void; // clear local state; cookie remains until backend expiry
-  requestOtp: (email: string) => Promise<void>;
-  verifyOtp: (
+  signOut: () => Promise<void>;
+  checkEmail: (email: string) => Promise<{ exists: boolean }>;
+  login: (
     email: string,
-    code: string,
-    name?: string,
-    phone?: string
-  ) => Promise<void>;
+    phone: string
+  ) => Promise<{ message: string; requires_otp: boolean }>;
+  signup: (
+    email: string,
+    name: string,
+    phone: string
+  ) => Promise<{ message: string; requires_otp: boolean }>;
+  verifyOtp: (email: string, otp: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>(null!);
@@ -43,12 +54,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             setUser(null);
           }
         },
-        requestOtp: async (email) => {
-          await requestOtp(email);
-        },
-        verifyOtp: async (email, code, name, phone) => {
-          const u = await verifyOtp(email, code, name, phone);
-          setUser(u);
+        checkEmail: (email) => checkEmail(email),
+        login: (email, phone) => login(email, phone),
+        signup: (email, name, phone) => signup(email, name, phone),
+        verifyOtp: async (email, otp) => {
+          const userData = await verifyOtpApi(email, otp);
+          setUser(userData);
         },
       }}
     >

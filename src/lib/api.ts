@@ -138,22 +138,22 @@ export const requestOtp = (email: string) =>
     body: { email: email.trim().toLowerCase() },
   });
 
-export const verifyOtp = (
-  email: string,
-  code: string,
-  name?: string,
-  phone?: string
-) =>
-  http<User>("/auth/verify-otp", {
-    method: "POST",
-    body: {
-      email: email.trim().toLowerCase(),
-      // keep leading zeros (do NOT Number() it)
-      code: String(code).replace(/\D/g, "").padStart(6, "0"),
-      ...(name ? { name: name.trim() } : {}),
-      ...(phone ? { phone: phone.trim() } : {}),
-    },
-  });
+// export const verifyOtp = (
+//   email: string,
+//   code: string,
+//   name?: string,
+//   phone?: string
+// ) =>
+//   http<User>("/auth/verify-otp", {
+//     method: "POST",
+//     body: {
+//       email: email.trim().toLowerCase(),
+//       // keep leading zeros (do NOT Number() it)
+//       code: String(code).replace(/\D/g, "").padStart(6, "0"),
+//       ...(name ? { name: name.trim() } : {}),
+//       ...(phone ? { phone: phone.trim() } : {}),
+//     },
+//   });
 
 export async function logout(): Promise<void> {
   await http<void>("/auth/logout", { method: "POST", credentials: "include" }); // :contentReference[oaicite:10]{index=10}
@@ -524,4 +524,47 @@ export async function adminDeleteUser(userId: UUID): Promise<void> {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
   }
+}
+
+// New auth flow functions
+export async function checkEmail(email: string): Promise<{ exists: boolean }> {
+  return http<{ exists: boolean }>("/auth/check-email", {
+    method: "POST",
+    body: { email: email.trim().toLowerCase() },
+  });
+}
+
+export async function login(
+  email: string,
+  phone: string
+): Promise<{ message: string; requires_otp: boolean }> {
+  return http("/auth/login", {
+    method: "POST",
+    body: { email: email.trim().toLowerCase(), phone: phone.trim() },
+  });
+}
+
+export async function signup(
+  email: string,
+  name: string,
+  phone: string
+): Promise<{ message: string; requires_otp: boolean }> {
+  return http("/auth/signup", {
+    method: "POST",
+    body: {
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+      phone: phone.trim(),
+    },
+  });
+}
+
+export async function verifyOtp(email: string, otp: string): Promise<User> {
+  return http<User>("/auth/verify-otp-new", {
+    method: "POST",
+    body: {
+      email: email.trim().toLowerCase(),
+      otp: otp.trim(),
+    },
+  });
 }

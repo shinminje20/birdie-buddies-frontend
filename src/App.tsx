@@ -6,6 +6,7 @@ import WalletPage from "./pages/WalletPage";
 import MyGamesPage from "./pages/MyGamesPage";
 import AdminPage from "./pages/AdminPage";
 import ProfilePage from "./pages/ProfilePage"; // used as the login screen
+import LoginPage from "./pages/LoginPage";
 import {
   RequireAuth,
   RequireGuest,
@@ -23,7 +24,7 @@ export default function App() {
         path="/login"
         element={
           <RequireGuest>
-            <ProfilePage />
+            <LoginPage />
           </RequireGuest>
         }
       />
