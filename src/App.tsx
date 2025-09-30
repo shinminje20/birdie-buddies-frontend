@@ -5,7 +5,7 @@ import SessionDetailPage from "./pages/SessionDetailPage";
 import WalletPage from "./pages/WalletPage";
 import MyGamesPage from "./pages/MyGamesPage";
 import AdminPage from "./pages/AdminPage";
-import ProfilePage from "./pages/ProfilePage"; // used as the login screen
+// import ProfilePage from "./pages/ProfilePage"; // used as the login screen
 import LoginPage from "./pages/LoginPage";
 import {
   RequireAuth,
