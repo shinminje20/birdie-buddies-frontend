@@ -1034,12 +1034,13 @@
  }
 
  .info-banner {
-     background: #eef6ff;
-     border: 1px solid #cfe4ff;
-     color: #12497a;
-     padding: 8px 10px;
+     background: var(--primary);
+     border: 1px solid var(--white);
+     color: var(--white);
+     padding: 12px 16px;
      border-radius: 6px;
-     font-size: 0.9rem;
+     font-size: 1.4rem;
+     text-align: center;
  }
 
  .warning-banner {

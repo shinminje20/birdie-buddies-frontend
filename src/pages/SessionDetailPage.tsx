@@ -136,7 +136,7 @@ export default function SessionDetailPage() {
             <>
               <label className="registration-title">Register</label>
               <FlashBanners />
-              <div className="seat-selection">
+              <div className="">
                 {/* <label className="form-label">Seats (1 + up to 2 guests)</label> */}
                 <SeatsSelector value={seats} onChange={setSeats} />
               </div>
@@ -216,16 +216,8 @@ export default function SessionDetailPage() {
 
               {/* Show a friendly hint */}
               <div className="info-banner" style={{ marginBottom: 8 }}>
-                You’re already registered.
+                You are registered!
               </div>
-
-              {myActiveSeatCount < 3 ? (
-                <></>
-              ) : (
-                <div className="warning-banner" style={{ marginTop: 8 }}>
-                  You’ve reached the maximum 2 guests.
-                </div>
-              )}
 
               {/* Cancel always targets the host registration so guest regs cascade */}
               {hostReg && (
@@ -239,7 +231,13 @@ export default function SessionDetailPage() {
                   Cancel My Registration
                 </button>
               )}
-
+              {myActiveSeatCount < 3 ? (
+                <></>
+              ) : (
+                <div className="warning-banner" style={{ marginTop: 8 }}>
+                  You’ve reached the maximum 2 guests.
+                </div>
+              )}
               {/* Add guest: hide/disable when max reached */}
               {myActiveSeatCount < 3 ? (
                 hostReg && (
@@ -269,7 +267,7 @@ export default function SessionDetailPage() {
         <div className="participants-section">
           <div className="section-header">
             <h2 className="section-title">Confirmed</h2>
-            <span className="participant-count">{confirmed.length}</span>
+            <span className="participant-count">{s.confirmed_seats}</span>
           </div>
           <div>
             {confirmedTopSix.map((r: RegRow) => (
@@ -281,9 +279,7 @@ export default function SessionDetailPage() {
                   <div className="participant-details">
                     <div className="participant-name">
                       {/* {r.seats} seat(s) */}
-                      {r.guest_names?.length
-                        ? `(Guest): ${r.guest_names.join(", ")}`
-                        : ""}
+                      {r.guest_names?.length ? `${r.host_name}` : r.host_name}
                     </div>
                     <div
                       className={
@@ -293,8 +289,8 @@ export default function SessionDetailPage() {
                       }
                     >
                       {r.guest_names?.length
-                        ? `invited by: ${r.host_name}`
-                        : r.host_name}
+                        ? `(Guest) ${r.guest_names.join(", ")}`
+                        : ""}
                       {r.host_user_id === user?.id ? (
                         <span className="guest-badge"> You</span>
                       ) : null}

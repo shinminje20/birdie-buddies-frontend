@@ -15,10 +15,7 @@ type AuthContextType = {
   loading: boolean;
   signOut: () => Promise<void>;
   checkEmail: (email: string) => Promise<{ exists: boolean }>;
-  login: (
-    email: string,
-    phone: string
-  ) => Promise<{ message: string; requires_otp: boolean }>;
+  login: (email: string, phone: string) => Promise<void>;
   signup: (
     email: string,
     name: string,
@@ -55,7 +52,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         },
         checkEmail: (email) => checkEmail(email),
-        login: (email, phone) => login(email, phone),
+        login: async (email, phone) => {
+          const userData = await login(email, phone);
+          setUser(userData);
+        },
         signup: (email, name, phone) => signup(email, name, phone),
         verifyOtp: async (email, otp) => {
           const userData = await verifyOtpApi(email, otp);

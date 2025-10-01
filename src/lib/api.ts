@@ -534,11 +534,8 @@ export async function checkEmail(email: string): Promise<{ exists: boolean }> {
   });
 }
 
-export async function login(
-  email: string,
-  phone: string
-): Promise<{ message: string; requires_otp: boolean }> {
-  return http("/auth/login", {
+export async function login(email: string, phone: string): Promise<User> {
+  return http<User>("/auth/login", {
     method: "POST",
     body: { email: email.trim().toLowerCase(), phone: phone.trim() },
   });

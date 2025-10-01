@@ -62,7 +62,12 @@ export default function LoginPage() {
     setError(null);
     try {
       await loginCtx(email.trim(), phone.trim());
-      setStep("verify");
+      //   setStep("verify");
+      const to =
+        (typeof (loc.state as any)?.from === "string"
+          ? (loc.state as any).from
+          : (loc.state as any)?.from?.pathname) || "/sessions";
+      nav(to, { replace: true });
     } catch (e: any) {
       setError(e.message || "Login failed");
     } finally {
@@ -109,22 +114,22 @@ export default function LoginPage() {
     }
   };
 
-  const handleResend = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      if (userExists) {
-        await loginCtx(email.trim(), phone.trim());
-      } else {
-        await signupCtx(email.trim(), name.trim(), phone.trim());
-      }
-      setError(null);
-    } catch (e: any) {
-      setError(e.message || "Failed to resend");
-    } finally {
-      setBusy(false);
-    }
-  };
+  //   const handleResend = async () => {
+  //     setBusy(true);
+  //     setError(null);
+  //     try {
+  //       if (userExists) {
+  //         await loginCtx(email.trim(), phone.trim());
+  //       } else {
+  //         await signupCtx(email.trim(), name.trim(), phone.trim());
+  //       }
+  //       setError(null);
+  //     } catch (e: any) {
+  //       setError(e.message || "Failed to resend");
+  //     } finally {
+  //       setBusy(false);
+  //     }
+  //   };
 
   const handleBack = () => {
     setStep("email");
@@ -196,7 +201,7 @@ export default function LoginPage() {
                 onChange={(e) =>
                   setPhone(e.target.value.replace(/[^0-9]/g, ""))
                 }
-                placeholder="01012345678"
+                placeholder="7781234567"
                 onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 autoFocus
               />
@@ -212,20 +217,20 @@ export default function LoginPage() {
               </small>
             </div>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
+              {/* <button
                 className="btn btn-secondary"
                 disabled={busy}
                 onClick={handleBack}
               >
                 ← Back
-              </button>
+              </button> */}
               <button
                 className="btn btn-primary"
                 disabled={busy || !phone}
                 onClick={handleLogin}
                 style={{ flex: 1 }}
               >
-                {busy ? "Sending..." : "Send Code"}
+                {busy ? "Signing In..." : "Sign In"}
               </button>
             </div>
           </>
@@ -248,7 +253,7 @@ export default function LoginPage() {
                 className="form-input"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Hong Gildong / John Doe"
+                placeholder="권지용 / G Dragon"
                 autoFocus
               />
             </div>
@@ -261,7 +266,7 @@ export default function LoginPage() {
                 onChange={(e) =>
                   setPhone(e.target.value.replace(/[^0-9]/g, ""))
                 }
-                placeholder="01012345678"
+                placeholder="7781234567"
               />
               <small
                 style={{
@@ -296,7 +301,7 @@ export default function LoginPage() {
 
         {step === "verify" && (
           <>
-            <p
+            {/* <p
               style={{
                 textAlign: "center",
                 color: "var(--medium)",
@@ -306,9 +311,9 @@ export default function LoginPage() {
               We sent a 6-digit code to
               <br />
               <strong>{email}</strong>
-            </p>
+            </p> */}
             <div className="form-group">
-              <label className="form-label">Verification Code</label>
+              {/* <label className="form-label">Verification Code</label> */}
               <input
                 className="form-input"
                 inputMode="numeric"
@@ -337,21 +342,21 @@ export default function LoginPage() {
               {busy ? "Verifying..." : "Verify & Continue"}
             </button>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button
+              {/* <button
                 className="btn btn-secondary"
                 disabled={busy}
                 onClick={handleResend}
                 style={{ flex: 1 }}
               >
                 Resend
-              </button>
+              </button> */}
               <button
                 className="btn btn-secondary"
                 disabled={busy}
                 onClick={handleBack}
                 style={{ flex: 1 }}
               >
-                Change Email
+                ← Back
               </button>
             </div>
           </>

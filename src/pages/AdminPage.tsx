@@ -167,9 +167,9 @@ export default function AdminPage() {
 /* ---------------- Create Session ---------------- */
 
 function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState("8-10pm");
   const [timezone] = useState("America/Vancouver"); // fixed per your UX
-  const [capacity, setCapacity] = useState(16);
+  const [capacity, setCapacity] = useState(52);
   const [priceDollars, setPriceDollars] = useState(13.5);
   const [preregs, setPreregs] = useState<PreregItem[]>([]);
 
@@ -192,7 +192,7 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
   // keep your helpers:
   const dateOptions: Option[] = useMemo(() => buildDateOptions(21), []);
   const [dateVal, setDateVal] = useState<string>(dateOptions[0].value);
-  const [timeVal, setTimeVal] = useState<string>(DEFAULT_TIMES[2].value);
+  const [timeVal, setTimeVal] = useState<string>(DEFAULT_TIMES[4].value);
   const starts_at_utc = useMemo(
     () => localDateTimeToUTCISO(dateVal, timeVal),
     [dateVal, timeVal]
