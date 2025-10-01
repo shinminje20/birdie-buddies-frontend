@@ -23,7 +23,6 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<Step>("email");
-  const [userExists, setUserExists] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +43,6 @@ export default function LoginPage() {
     setError(null);
     try {
       const result = await checkEmailCtx(email.trim());
-      setUserExists(result.exists);
       setStep(result.exists ? "login" : "signup");
     } catch (e: any) {
       setError(e.message || "Failed to check email");
@@ -113,23 +111,6 @@ export default function LoginPage() {
       setBusy(false);
     }
   };
-
-  //   const handleResend = async () => {
-  //     setBusy(true);
-  //     setError(null);
-  //     try {
-  //       if (userExists) {
-  //         await loginCtx(email.trim(), phone.trim());
-  //       } else {
-  //         await signupCtx(email.trim(), name.trim(), phone.trim());
-  //       }
-  //       setError(null);
-  //     } catch (e: any) {
-  //       setError(e.message || "Failed to resend");
-  //     } finally {
-  //       setBusy(false);
-  //     }
-  //   };
 
   const handleBack = () => {
     setStep("email");
