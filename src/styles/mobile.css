@@ -100,8 +100,8 @@
  }
 
  .user-avatar {
-     width: 36px;
-     height: 36px;
+     width: 42px;
+     height: 42px;
      border-radius: 50%;
      background: linear-gradient(135deg, var(--primary), var(--secondary));
      display: flex;
@@ -606,8 +606,8 @@
  }
 
  .participant-avatar {
-     width: 36px;
-     height: 36px;
+     width: 42px;
+     height: 42px;
      border-radius: 50%;
      background: linear-gradient(135deg, #667eea, #764ba2);
      display: flex;
