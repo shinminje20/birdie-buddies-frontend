@@ -35,7 +35,7 @@ export default function FlashBanners() {
   }, []);
 
   return (
-    <div className="banner-stack">
+    <div className="">
       {items.map((it) => (
         <Banner
           key={it.id}
