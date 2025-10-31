@@ -42,6 +42,13 @@ export default function WalletPage() {
   return (
     <MobileShell>
       <h1 className="page-title">Wallet</h1>
+      {/* Deposit Information */}
+      <div className="info-banner" style={{ marginBottom: 16 }}>
+        <strong>💰 Deposit Funds</strong>
+        <div style={{ marginTop: 4, fontSize: "0.9em" }}>
+          Send e-transfer to: <strong>bdbirdies@gmail.com</strong>
+        </div>
+      </div>
       <div className="detail-container">
         {/* Summary */}
         <div className="cost-display" style={{ marginBottom: 16 }}>
