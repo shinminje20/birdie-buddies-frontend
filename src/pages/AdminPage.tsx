@@ -86,7 +86,7 @@ function UTCtohhmmTimeForamt(date: Date): string {
 function displayKind(kind: string) {
   const k = (kind || "").toLowerCase();
   if (k === "deposit_in" || k === "deposit-in") return "Deposit";
-  if (k === "fee_capture") return "Paid";
+  if (k === "fee_capture") return "Drop-in paid";
   if (k === "refund") return "Refund";
   if (k === "penalty") return "Penalty";
   return k.replace(/_/g, "-"); // fallback
@@ -722,7 +722,12 @@ function UsersAdminCard() {
                 <div className="waitlist-item" key={e.id}>
                   <div className="waitlist-info">
                     <div className="waitlist-name">
-                      {displayKind(e.kind)} {mmdd(e.created_at)}
+                      {displayKind(e.kind) != "Deposit"
+                        ? displayKind(e.kind)
+                        : e.amount_cents >= 0
+                        ? displayKind(e.kind)
+                        : "Admin withdrawal"}{" "}
+                      {mmdd(e.created_at)}
                     </div>
                   </div>
                   <div className="stat-value" style={{ marginLeft: "auto" }}>
