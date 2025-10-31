@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
 import MobileShell from "../components/MobileShell/MobileShell";
 import Button from "../components/UI/Button";
 import SeatsSelector from "../components/Session/SeatsSelector";
@@ -66,7 +67,11 @@ export default function SessionDetailPage() {
 
   const [requestId, setRequestId] = useState<string | undefined>();
   // listen for async registration result
-  useRequestSSE(requestId, () => refetchAll());
+  useRequestSSE(requestId, () => {
+    refetchAll();
+    // Reload page to ensure UI is fully updated
+    setTimeout(() => window.location.reload(), 500);
+  });
 
   const confirmed = (regs.data ?? []).filter((r) => r.state === "confirmed");
   const waitlist = (regs.data ?? []).filter((r) => r.state === "waitlisted");
@@ -202,11 +207,12 @@ export default function SessionDetailPage() {
                     try {
                       await getRequestStatus(res.request_id);
                       refetchAll();
+                      window.location.reload();
                     } catch {}
                   }, 2000);
                 }}
               >
-                Register Now
+                {requestId ? "Processing..." : "Register Now"}
               </Button>
             </>
           ) : (
@@ -224,9 +230,17 @@ export default function SessionDetailPage() {
                 <button
                   className="btn btn-danger"
                   style={{ marginTop: 8 }}
-                  onClick={() =>
-                    cancelRegistration(hostReg.registration_id).then(refetchAll)
-                  }
+                  onClick={async () => {
+                    const confirmed = window.confirm(
+                      "Are you sure you want to cancel your registration? This action cannot be undone."
+                    );
+                    if (confirmed) {
+                      await cancelRegistration(hostReg.registration_id);
+
+                      window.location.reload();
+                      flashSuccess("✓ Registration canceled");
+                    }
+                  }}
                 >
                   Cancel My Registration
                 </button>
@@ -334,10 +348,15 @@ export default function SessionDetailPage() {
                 {r.host_user_id === user?.id && (
                   <button
                     className="action-btn danger"
-                    onClick={() => {
-                      cancelRegistration(r.registration_id).then(refetchAll);
-                      refetchAll();
-                      flashSuccess("✓ Registration canceled");
+                    onClick={async () => {
+                      const confirmed = window.confirm(
+                        "Are you sure you want to cancel your waitlist registration?"
+                      );
+                      if (confirmed) {
+                        await cancelRegistration(r.registration_id);
+                        flashSuccess("✓ Registration canceled");
+                        window.location.reload();
+                      }
                     }}
                   >
                     Cancel
@@ -348,6 +367,20 @@ export default function SessionDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Loading Overlay */}
+
+      {/* Loading Overlay - rendered at body level via portal */}
+      {requestId &&
+        createPortal(
+          <div className="loading-overlay">
+            <div className="loading-spinner">
+              <div className="spinner" />
+              <div className="loading-text">Processing registration...</div>
+            </div>
+          </div>,
+          document.body
+        )}
     </MobileShell>
   );
 }
