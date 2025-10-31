@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
@@ -16,7 +16,6 @@ import {
   formatDollarsFromCents,
   UTCtohhmmTimeForamt,
   getRequestStatus,
-  // MARK: added
   getMyWallet,
 } from "../lib/api";
 import { useRequestSSE, useSessionSSE } from "../lib/sse";
@@ -39,17 +38,18 @@ export default function SessionDetailPage() {
     queryFn: () => listRegistrationsForSession(id),
     enabled: !!id,
   });
-  // MARK: added — my wallet summary
   const wallet = useQuery({
     queryKey: ["wallet", user?.id],
     queryFn: () => getMyWallet(),
     enabled: !!user, // fetch only when logged in
   });
 
-  const refetchAll = useCallback(() => {
-    qc.invalidateQueries({ queryKey: ["session", id] });
-    qc.invalidateQueries({ queryKey: ["regs", id] });
-    qc.invalidateQueries({ queryKey: ["wallet", user?.id] });
+  const refetchAll = useCallback(async () => {
+    await Promise.all([
+      qc.invalidateQueries({ queryKey: ["session", id] }),
+      qc.invalidateQueries({ queryKey: ["regs", id] }),
+      qc.invalidateQueries({ queryKey: ["wallet", user?.id] }),
+    ]);
   }, [id, qc, user?.id]);
 
   // live updates on session channel
@@ -66,11 +66,34 @@ export default function SessionDetailPage() {
   }, [seats, guest1, guest2]);
 
   const [requestId, setRequestId] = useState<string | undefined>();
-  // listen for async registration result
-  useRequestSSE(requestId, () => {
-    refetchAll();
-    // Reload page to ensure UI is fully updated
-    setTimeout(() => window.location.reload(), 500);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  // Use ref to track if we should continue polling
+  const shouldPollRef = useRef<boolean>(false);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined
+  );
+
+  // SSE handler - simple version that just refetches data
+  useRequestSSE(requestId, async () => {
+    if (!requestId) return;
+
+    // Stop polling if it's running
+    shouldPollRef.current = false;
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+    }
+
+    // Refetch data
+    await refetchAll();
+
+    // Clear loading state after a short delay to ensure UI updates
+    setTimeout(() => {
+      setIsProcessing(false);
+      setRequestId(undefined);
+      flashSuccess("Registration confirmed!");
+    }, 500);
   });
 
   const confirmed = (regs.data ?? []).filter((r) => r.state === "confirmed");
@@ -79,26 +102,16 @@ export default function SessionDetailPage() {
   const [showAll, setShowAll] = useState(false);
   const confirmedTopSix = showAll ? confirmed : confirmed.slice(0, 6);
 
-  //   const myReg = (regs.data ?? []).find(
-  //     (r) => r.host_user_id === user?.id && r.state !== "canceled"
-  //   );
-
-  // all my active regs (confirmed or waitlisted) in this session
   const myRegs = (regs.data ?? []).filter(
     (r) => r.host_user_id === user?.id && r.state !== "canceled"
   );
 
-  // pick the host registration row:
-  // - if there's a combined row (seats>1), it's the host
-  // - else use the row with no guest_names (seats=1, host seat)
   const hostReg =
     myRegs.find((r) => r.seats > 1) ??
     myRegs.find((r) => !r.guest_names || r.guest_names.length === 0) ??
     null;
 
-  // total active seats I currently hold (host + guests)
   const myActiveSeatCount = myRegs.reduce((sum, r) => sum + (r.seats || 0), 0);
-
   const hasMyReg = myRegs.length > 0;
 
   const feeDisplay = sess.data
@@ -108,10 +121,102 @@ export default function SessionDetailPage() {
     ? formatDollarsFromCents(sess.data.fee_cents * seats)
     : "0.0";
 
-  // MARK: added — affordability calculation
   const requiredCents = sess.data ? Number(sess.data.fee_cents) * seats : 0;
   const availableCents = wallet.data?.available_cents ?? 0;
   const canAfford = availableCents >= requiredCents;
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      shouldPollRef.current = false;
+      if (pollTimeoutRef.current) {
+        clearTimeout(pollTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleRegistration = async () => {
+    if (wallet.isSuccess && !canAfford) {
+      flashWarn(
+        `Insufficient deposit for ${seats} seat${
+          seats > 1 ? "s" : ""
+        }. Required: ${totalDisplay}. Please contact an admin to top up.`
+      );
+      return;
+    }
+
+    setIsProcessing(true);
+    shouldPollRef.current = true;
+
+    try {
+      const res = await enqueueRegistration(s.id, seats, guestNames);
+      setRequestId(res.request_id);
+      flashInfo("Registration submitted!");
+
+      // Start polling as backup (in case SSE doesn't work)
+      let attempts = 0;
+      const maxAttempts = 15;
+
+      const pollStatus = async () => {
+        // Check if we should continue polling
+        if (!shouldPollRef.current || attempts >= maxAttempts) {
+          if (attempts >= maxAttempts) {
+            setIsProcessing(false);
+            setRequestId(undefined);
+            flashWarn(
+              "Registration is taking longer than expected. Please refresh the page."
+            );
+          }
+          return;
+        }
+
+        attempts++;
+
+        try {
+          // Try to get request status
+          await getRequestStatus(res.request_id);
+
+          // If successful, refetch data
+          await refetchAll();
+
+          // Check if registration now exists
+          await new Promise((resolve) => setTimeout(resolve, 500)); // Small delay for data propagation
+          const updatedRegs = await qc.fetchQuery({
+            queryKey: ["regs", id],
+            queryFn: () => listRegistrationsForSession(id),
+          });
+
+          const hasNewReg = updatedRegs?.some(
+            (r) => r.host_user_id === user?.id && r.state !== "canceled"
+          );
+
+          if (hasNewReg) {
+            shouldPollRef.current = false;
+            setIsProcessing(false);
+            setRequestId(undefined);
+            flashSuccess("Registration confirmed!");
+            return;
+          }
+        } catch (error) {
+          // Request not ready yet, continue polling
+        }
+
+        // Schedule next poll if we should continue
+        if (shouldPollRef.current) {
+          pollTimeoutRef.current = setTimeout(pollStatus, 1500);
+        }
+      };
+
+      // Start polling after 2 seconds (give SSE a chance first)
+      pollTimeoutRef.current = setTimeout(pollStatus, 2000);
+    } catch (error) {
+      setIsProcessing(false);
+      setRequestId(undefined);
+      shouldPollRef.current = false;
+      flashWarn("Failed to submit registration. Please try again.");
+    }
+  };
+
   if (!sess.data)
     return (
       <MobileShell>
@@ -135,14 +240,13 @@ export default function SessionDetailPage() {
             <div>Status: {s.status}</div>
           </div>
         </div>
-        {/* Registration */}
+
         <div className="registration-card">
           {!hasMyReg ? (
             <>
               <label className="registration-title">Register</label>
               <FlashBanners />
               <div className="">
-                {/* <label className="form-label">Seats (1 + up to 2 guests)</label> */}
                 <SeatsSelector value={seats} onChange={setSeats} />
               </div>
 
@@ -179,94 +283,95 @@ export default function SessionDetailPage() {
 
               <Button
                 disabled={
-                  !user ||
-                  requestId !== undefined ||
-                  seats !== 1 + guestNames.length
-                  // (wallet.isSuccess && !canAfford) // MARK: added — block when low balance
+                  !user || isProcessing || seats !== 1 + guestNames.length
                 }
-                onClick={async () => {
-                  // MARK: safety
-                  if (wallet.isSuccess && !canAfford) {
-                    flashWarn(
-                      `Insufficient deposit for ${seats} seat${
-                        seats > 1 ? "s" : ""
-                      }. Required: ${totalDisplay}. Please contact an admin to top up.`
-                    );
-                    return;
-                  }
-                  const res = await enqueueRegistration(
-                    s.id,
-                    seats,
-                    guestNames
-                  );
-                  setRequestId(res.request_id); // will update via SSE/poll
-                  flashInfo("Registration submitted!");
-                  // fallback poll in case SSE infra is blocked:
-                  setTimeout(async () => {
-                    if (!res.request_id) return;
-                    try {
-                      await getRequestStatus(res.request_id);
-                      refetchAll();
-                      window.location.reload();
-                    } catch {}
-                  }, 2000);
-                }}
+                onClick={handleRegistration}
               >
-                {requestId ? "Processing..." : "Register Now"}
+                {isProcessing ? "Processing..." : "Register Now"}
               </Button>
             </>
           ) : (
             <>
-              {/* Already registered: manage/cancel */}
               <FlashBanners />
-
-              {/* Show a friendly hint */}
               <div className="info-banner" style={{ marginBottom: 8 }}>
                 You are registered!
               </div>
 
-              {/* Cancel always targets the host registration so guest regs cascade */}
               {hostReg && (
                 <button
                   className="btn btn-danger"
                   style={{ marginTop: 8 }}
+                  disabled={isCanceling}
                   onClick={async () => {
                     const confirmed = window.confirm(
                       "Are you sure you want to cancel your registration? This action cannot be undone."
                     );
                     if (confirmed) {
-                      await cancelRegistration(hostReg.registration_id);
+                      setIsCanceling(true);
+                      try {
+                        await cancelRegistration(hostReg.registration_id);
 
-                      window.location.reload();
-                      flashSuccess("✓ Registration canceled");
+                        // Wait for backend to process
+                        await new Promise((resolve) =>
+                          setTimeout(resolve, 500)
+                        );
+
+                        // Refetch and wait for the data to update
+                        await Promise.all([
+                          qc.refetchQueries({ queryKey: ["session", id] }),
+                          qc.refetchQueries({ queryKey: ["regs", id] }),
+                          qc.refetchQueries({ queryKey: ["wallet", user?.id] }),
+                        ]);
+
+                        // Verify the cancellation was successful
+                        const updatedRegs = await qc.fetchQuery({
+                          queryKey: ["regs", id],
+                          queryFn: () => listRegistrationsForSession(id),
+                        });
+
+                        const stillRegistered = updatedRegs?.some(
+                          (r) =>
+                            r.registration_id === hostReg.registration_id &&
+                            r.state !== "canceled"
+                        );
+
+                        if (!stillRegistered) {
+                          flashSuccess("Registration canceled successfully");
+                        } else {
+                          flashWarn(
+                            "Cancellation is being processed. Please wait..."
+                          );
+                          // Try to refetch again after a delay
+                          setTimeout(() => refetchAll(), 1000);
+                        }
+                      } catch (error) {
+                        console.error("Cancellation error:", error);
+                        flashWarn(
+                          "Failed to cancel registration. Please try again."
+                        );
+                      } finally {
+                        setIsCanceling(false);
+                      }
                     }
                   }}
                 >
-                  Cancel My Registration
+                  {isCanceling ? "Canceling..." : "Cancel My Registration"}
                 </button>
               )}
-              {myActiveSeatCount < 3 ? (
-                <></>
-              ) : (
-                <div className="warning-banner" style={{ marginTop: 8 }}>
-                  You’ve reached the maximum 2 guests.
-                </div>
+
+              {myActiveSeatCount < 3 && hostReg && (
+                <AddGuestInline
+                  hostRegistrationId={hostReg.registration_id}
+                  currentSeats={myActiveSeatCount}
+                  maxSeats={3}
+                  onAdded={refetchAll}
+                />
               )}
-              {/* Add guest: hide/disable when max reached */}
-              {myActiveSeatCount < 3 ? (
-                hostReg && (
-                  <AddGuestInline
-                    hostRegistrationId={hostReg.registration_id}
-                    currentSeats={myActiveSeatCount} // total active seats across my regs
-                    maxSeats={3} // host + up to 2 guests
-                    // MARK: optional: pass wallet info so AddGuestInline can disable if < one more seat
-                    // walletAvailableCents={availableCents}
-                    // seatFeeCents={Number(s.fee_cents)}
-                    onAdded={refetchAll}
-                  />
-                )
-              ) : (
-                <></>
+
+              {myActiveSeatCount >= 3 && (
+                <div className="warning-banner" style={{ marginTop: 8 }}>
+                  You've reached the maximum 2 guests.
+                </div>
               )}
             </>
           )}
@@ -292,7 +397,6 @@ export default function SessionDetailPage() {
                   </div>
                   <div className="participant-details">
                     <div className="participant-name">
-                      {/* {r.seats} seat(s) */}
                       {r.guest_names?.length ? `${r.host_name}` : r.host_name}
                     </div>
                     <div
@@ -315,6 +419,7 @@ export default function SessionDetailPage() {
             ))}
           </div>
         </div>
+
         {confirmed.length > 6 && (
           <button
             className="btn btn-primary"
@@ -348,18 +453,65 @@ export default function SessionDetailPage() {
                 {r.host_user_id === user?.id && (
                   <button
                     className="action-btn danger"
+                    disabled={isCanceling}
                     onClick={async () => {
                       const confirmed = window.confirm(
                         "Are you sure you want to cancel your waitlist registration?"
                       );
                       if (confirmed) {
-                        await cancelRegistration(r.registration_id);
-                        flashSuccess("✓ Registration canceled");
-                        window.location.reload();
+                        setIsCanceling(true);
+                        try {
+                          await cancelRegistration(r.registration_id);
+
+                          // Wait for backend to process
+                          await new Promise((resolve) =>
+                            setTimeout(resolve, 500)
+                          );
+
+                          // Refetch and wait for the data to update
+                          await Promise.all([
+                            qc.refetchQueries({ queryKey: ["session", id] }),
+                            qc.refetchQueries({ queryKey: ["regs", id] }),
+                            qc.refetchQueries({
+                              queryKey: ["wallet", user?.id],
+                            }),
+                          ]);
+
+                          // Verify the cancellation was successful
+                          const updatedRegs = await qc.fetchQuery({
+                            queryKey: ["regs", id],
+                            queryFn: () => listRegistrationsForSession(id),
+                          });
+
+                          const stillInWaitlist = updatedRegs?.some(
+                            (reg) =>
+                              reg.registration_id === r.registration_id &&
+                              reg.state === "waitlisted"
+                          );
+
+                          if (!stillInWaitlist) {
+                            flashSuccess(
+                              "Waitlist registration canceled successfully"
+                            );
+                          } else {
+                            flashWarn(
+                              "Cancellation is being processed. Please wait..."
+                            );
+                            // Try to refetch again after a delay
+                            setTimeout(() => refetchAll(), 1000);
+                          }
+                        } catch (error) {
+                          console.error("Cancellation error:", error);
+                          flashWarn(
+                            "Failed to cancel registration. Please try again."
+                          );
+                        } finally {
+                          setIsCanceling(false);
+                        }
                       }
                     }}
                   >
-                    Cancel
+                    {isCanceling ? "..." : "Cancel"}
                   </button>
                 )}
               </div>
@@ -369,14 +521,19 @@ export default function SessionDetailPage() {
       </div>
 
       {/* Loading Overlay */}
-
-      {/* Loading Overlay - rendered at body level via portal */}
-      {requestId &&
+      {isProcessing &&
         createPortal(
           <div className="loading-overlay">
             <div className="loading-spinner">
               <div className="spinner" />
-              <div className="loading-text">Processing registration...</div>
+              <div className="loading-text">
+                Processing registration...
+                <div
+                  style={{ fontSize: "0.9em", marginTop: "8px", opacity: 0.8 }}
+                >
+                  This may take a few seconds
+                </div>
+              </div>
             </div>
           </div>,
           document.body

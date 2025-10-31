@@ -15,10 +15,9 @@ export default function NavBar() {
 
   // Fetch wallet summary for the signed-in user
   const wallet = useQuery({
-    queryKey: ["wallet", "me"],
+    queryKey: ["wallet", user?.id], // <-- match the key you invalidate
     queryFn: getMyWallet,
-    enabled: !!user, // only when authed
-    // staleTime: 30_000,
+    enabled: !!user,
   });
   //   const w = useQuery({ queryKey: ["wallet/me"], queryFn: getMyWallet });
 
@@ -37,7 +36,12 @@ export default function NavBar() {
       <div className="nav-content">
         <div
           className="nav-brand"
-          style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            cursor: "pointer",
+          }}
           onClick={() => nav("/sessions")}
         >
           <img src="/birdie2.svg" alt="BirdieBuddies" width={34} height={34} />
