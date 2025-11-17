@@ -30,6 +30,19 @@ export type RegRow = {
   guest_names?: string[] | null;
   waitlist_pos?: number | null;
   state: "confirmed" | "waitlisted" | "canceled";
+};
+
+export type MyRegistration = {
+  registration_id: string;
+  session_id: string;
+  session_title?: string | null;
+  starts_at_utc: string; // ISO (UTC)
+  timezone: string; // IANA
+  session_status: "scheduled" | "closed" | "canceled";
+  seats: number;
+  guest_names?: string[] | null;
+  waitlist_pos?: number | null;
+  state: "confirmed" | "waitlisted" | "canceled";
 }; // list regs for a session + my regs :contentReference[oaicite:2]{index=2}
 
 export type RequestStatus = {
@@ -167,6 +180,15 @@ export async function getSession(sessionId: string): Promise<Session> {
   return http<Session>(`/sessions/${sessionId}`); // :contentReference[oaicite:12]{index=12}
 }
 
+/* -------- Admin: Session History -------- */
+export async function adminListSessionHistory(limit = 15, offset = 0): Promise<Session[]> {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset),
+  });
+  return http<Session[]>(`/admin/sessions/history?${params.toString()}`);
+}
+
 /* -------- Registrations / Requests -------- */
 export async function listRegistrationsForSession(
   sessionId: string
@@ -191,8 +213,9 @@ export async function listRegistrationsForSession(
 //   return { rows, nextOffset: rows.length < limit ? undefined : offset + limit };
 // }
 
-export async function myRegistrations(): Promise<RegRow[]> {
-  return http<RegRow[]>("/me/registrations"); // :contentReference[oaicite:14]{index=14}
+export async function myRegistrations(showPast = false): Promise<MyRegistration[]> {
+  const params = showPast ? "?show_past=true" : "";
+  return http<MyRegistration[]>(`/me/registrations${params}`);
 }
 
 export async function enqueueRegistration(

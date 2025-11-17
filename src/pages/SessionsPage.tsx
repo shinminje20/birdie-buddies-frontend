@@ -1,28 +1,95 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import MobileShell from "../components/MobileShell/MobileShell";
 import {
   listSessions,
+  adminListSessionHistory,
   type Session,
   formatDollarsFromCents,
   UTCtohhmmTimeForamt,
 } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { Link } from "react-router-dom";
 
 export default function SessionsPage() {
-  const { data, isLoading, error } = useQuery({
+  const { user } = useAuth();
+  const [showPastSessions, setShowPastSessions] = useState(false);
+  const [pastSessions, setPastSessions] = useState<Session[]>([]);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const limit = 15;
+
+  const { data: upcomingSessions, isLoading, error } = useQuery({
     queryKey: ["sessions"],
     queryFn: listSessions,
   });
 
+  const {
+    data: pastSessionsData,
+    isLoading: isLoadingPast,
+    error: pastError
+  } = useQuery({
+    queryKey: ["sessions", "history", offset],
+    queryFn: () => adminListSessionHistory(limit, offset),
+    enabled: user?.is_admin === true && showPastSessions,
+  });
+
+  // Update past sessions when data changes
+  useEffect(() => {
+    if (pastSessionsData) {
+      if (offset === 0) {
+        setPastSessions(pastSessionsData);
+      } else {
+        setPastSessions(prev => [...prev, ...pastSessionsData]);
+      }
+      setHasMore(pastSessionsData.length === limit);
+    }
+  }, [pastSessionsData, offset]);
+
+  const handleToggle = () => {
+    setShowPastSessions(!showPastSessions);
+    if (!showPastSessions) {
+      // Reset pagination when switching to past sessions
+      setOffset(0);
+      setPastSessions([]);
+      setHasMore(true);
+    }
+  };
+
+  const handleLoadMore = () => {
+    setOffset(prev => prev + limit);
+  };
+
+  const displayData = showPastSessions ? pastSessions : upcomingSessions;
+  const displayLoading = showPastSessions ? isLoadingPast : isLoading;
+  const displayError = showPastSessions ? pastError : error;
+
   return (
     <MobileShell>
-      <h1 className="page-title">Upcoming Sessions</h1>
+      <div className="page-header">
+        <h1 className="page-title">
+          {showPastSessions ? "Past Sessions" : "Upcoming Sessions"}
+        </h1>
 
-      {isLoading && <div className="skeleton" />}
-      {error && <div className="error">Failed to load sessions.</div>}
+        {user?.is_admin && (
+          <label className="toggle-container">
+            <span className="toggle-label">Past Sessions</span>
+            <input
+              type="checkbox"
+              checked={showPastSessions}
+              onChange={handleToggle}
+              className="toggle-checkbox"
+            />
+            <span className="toggle-slider"></span>
+          </label>
+        )}
+      </div>
+
+      {displayLoading && offset === 0 && <div className="skeleton" />}
+      {displayError && <div className="error">Failed to load sessions.</div>}
 
       <div className="sessions-grid">
-        {(data ?? []).map((s: Session) => (
+        {(displayData ?? []).map((s: Session) => (
           <Link
             key={s.id}
             to={`/sessions/${s.id}`}
@@ -64,10 +131,25 @@ export default function SessionsPage() {
             </div>
           </Link>
         ))}
-        {!isLoading && (data?.length ?? 0) === 0 && (
-          <div className="empty-state">No Sessions yet.</div>
+        {!displayLoading && (displayData?.length ?? 0) === 0 && (
+          <div className="empty-state">
+            {showPastSessions ? "No past sessions yet." : "No Sessions yet."}
+          </div>
         )}
       </div>
+
+      {showPastSessions && hasMore && !isLoadingPast && (displayData?.length ?? 0) > 0 && (
+        <button
+          onClick={handleLoadMore}
+          className="load-more-button"
+        >
+          Load More
+        </button>
+      )}
+
+      {showPastSessions && isLoadingPast && offset > 0 && (
+        <div className="loading-more">Loading...</div>
+      )}
     </MobileShell>
   );
 }

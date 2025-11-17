@@ -167,32 +167,55 @@ export default function AdminPage() {
 /* ---------------- Create Session ---------------- */
 
 function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
-  const [title, setTitle] = useState("8-10pm");
   const [timezone] = useState("America/Vancouver"); // fixed per your UX
   const [capacity, setCapacity] = useState(52);
   const [priceDollars, setPriceDollars] = useState(13.5);
   const [preregs, setPreregs] = useState<PreregItem[]>([]);
+  const [isManuallyEdited, setIsManuallyEdited] = useState(false);
 
   /** Default time slots (edit as needed) */
   const DEFAULT_TIMES: TimeOption[] = [
+    { label: "2:00 PM", value: "14:00" },
+    { label: "2:30 PM", value: "14:30" },
+    { label: "3:00 PM", value: "15:00" },
+    { label: "3:30 PM", value: "15:30" },
+    { label: "4:00 PM", value: "16:00" },
+    { label: "4:30 PM", value: "16:30" },
+    { label: "5:00 PM", value: "17:00" },
+    { label: "5:30 PM", value: "17:30" },
     { label: "6:00 PM", value: "18:00" },
     { label: "6:30 PM", value: "18:30" },
     { label: "7:00 PM", value: "19:00" },
     { label: "7:30 PM", value: "19:30" },
     { label: "8:00 PM", value: "20:00" },
     { label: "8:30 PM", value: "20:30" },
-    { label: "9:00 PM", value: "20:30" },
-    { label: "9:30 PM", value: "20:30" },
-    { label: "10:00 PM", value: "20:30" },
-    { label: "10:30 PM", value: "20:30" },
-    { label: "11:00 PM", value: "20:30" },
-    { label: "11:30 PM", value: "20:30" },
+    { label: "9:00 PM", value: "21:00" },
+    { label: "9:30 PM", value: "21:30" },
+    { label: "10:00 PM", value: "22:00" },
+    { label: "10:30 PM", value: "22:30" },
+    { label: "11:00 PM", value: "23:00" },
+    { label: "11:30 PM", value: "23:30" },
   ];
 
   // keep your helpers:
   const dateOptions: Option[] = useMemo(() => buildDateOptions(21), []);
   const [dateVal, setDateVal] = useState<string>(dateOptions[0].value);
-  const [timeVal, setTimeVal] = useState<string>(DEFAULT_TIMES[4].value);
+  const [timeVal, setTimeVal] = useState<string>(DEFAULT_TIMES[12].value);
+
+  // Auto-set title based on selected date
+  const autoTitle = useMemo(() => {
+    const selectedDate = dateOptions.find((opt) => opt.value === dateVal);
+    return selectedDate?.label || "";
+  }, [dateVal, dateOptions]);
+
+  const [title, setTitle] = useState(autoTitle);
+
+  // Update title when date changes (unless user manually edited it)
+  React.useEffect(() => {
+    if (!isManuallyEdited) {
+      setTitle(autoTitle);
+    }
+  }, [autoTitle, isManuallyEdited]);
   const starts_at_utc = useMemo(
     () => localDateTimeToUTCISO(dateVal, timeVal),
     [dateVal, timeVal]
@@ -217,6 +240,7 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
       flashSuccess("✓ Session created!");
       onCreated();
       setPreregs([]);
+      setIsManuallyEdited(false); // Reset for next session creation
       navigate(`/admin/sessions/${data.id}`);
     },
 
@@ -242,8 +266,11 @@ function CreateSessionCard({ onCreated }: { onCreated: () => void }) {
         <input
           className="form-input"
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Friday Night Smash"
+          onChange={(e) => {
+            setTitle(e.target.value);
+            setIsManuallyEdited(true);
+          }}
+          placeholder="Session Title"
         />
       </div>
 
@@ -546,8 +573,13 @@ function UsersAdminCard() {
     }) => adminDeposit(user_id, amount_cents, idemRef.current),
     onSuccess: () => {
       flashSuccess("✓ Deposit applied");
-      if (selected) detail.refetch();
-      list.refetch();
+      // Regenerate idempotency key for next deposit
+      idemRef.current = newIdempotencyKey();
+      // Invalidate queries to refresh data
+      if (selected) {
+        qc.invalidateQueries({ queryKey: ["admin-user", selected] });
+      }
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
     },
     onError: (e: any) => flashError(String(e?.message || "Deposit failed")),
   });
@@ -577,61 +609,210 @@ function UsersAdminCard() {
 
         <div>
           {users.map((u) => (
-            <div>
+            <div key={u.id} style={{ marginBottom: "12px" }}>
               <button
-                key={u.id}
                 className={`waitlist-item ${selected === u.id ? "active" : ""}`}
                 style={{ width: "100%", textAlign: "left" }}
-                onClick={() => setSelected(u.id)}
+                onClick={() => setSelected(selected === u.id ? null : u.id)}
               >
-                <div className="waitlist-info">
-                  <div className="waitlist-name">{u.name}</div>
-                  <div className="waitlist-seats">{u.email}</div>
+                {/* <div className="participant-card">
+                  <div className="participant-info"> */}
+                {/* <div className="participant-avatar">
+                  {u.name.slice(0, 2).toUpperCase()}
+                </div> */}
+                {/* <div className="participant-details"> */}
+                <div className="participant-name">
+                  {u.name}{" "}
+                  {u.is_admin ? (
+                    <span className="guest-badge">admin</span>
+                  ) : null}
+                </div>
+                <div className="participant-meta">
+                  <div>{u.email.split("@")[0]}</div>{" "}
+                  <div>{u.phone ? `• ${u.phone}` : ""}</div>
                 </div>
                 <div className="stat-value" style={{ marginLeft: "auto" }}>
                   {formatDollarsFromCents(u.available_cents)}
                 </div>
+                {/* </div>
+                  </div> */}
+                {/* </div> */}
               </button>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "row",
-                  justifyContent: "space-around",
-                  marginBottom: "12px",
-                }}
-              >
-                <button
-                  className="btn btn-secondary"
-                  style={{ width: "48%" }}
-                  onClick={() =>
-                    setEditing({
-                      id: u.id,
-                      name: u.name ?? "",
-                      email: u.email ?? "",
-                      phone: u.phone ?? "",
-                      status: (u.status as "active" | "disabled") ?? "active",
-                      is_admin: !!u.is_admin,
-                    })
-                  }
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn btn-danger"
-                  style={{ width: "48%" }}
-                  onClick={() => {
-                    if (
-                      confirm(
-                        "Soft delete this user? They will be disabled and hidden."
-                      )
-                    ) {
-                      deleteUserMut.mutate(u.id);
-                    }
+
+              {/* Inline expanded detail */}
+              {selected === u.id && detail.data && (
+                <div
+                  className="user-detail-expanded animate-in"
+                  style={{
+                    background: "rgba(16, 185, 129, 0.05)",
+                    border: "2px solid var(--primary)",
+                    borderRadius: "var(--radius)",
+                    padding: "16px",
+                    marginTop: "8px",
                   }}
                 >
-                  Delete
-                </button>
-              </div>
+                  {/* Wallet summary + deposit */}
+                  <div className="cost-display" style={{ marginTop: 12 }}>
+                    <div>
+                      <div className="cost-label">Available</div>
+                      <div className="cost-value">
+                        {formatDollarsFromCents(
+                          detail.data.wallet.available_cents
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="cost-label">Posted</div>
+                      <div className="cost-value">
+                        {formatDollarsFromCents(
+                          detail.data.wallet.posted_cents
+                        )}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="cost-label">Holds</div>
+                      <div className="cost-value">
+                        {formatDollarsFromCents(detail.data.wallet.holds_cents)}
+                      </div>
+                    </div>
+                  </div>
+
+                  <DepositBox
+                    busy={deposit.isPending}
+                    onSubmit={(dollars) => {
+                      deposit.mutate({
+                        user_id: u.id,
+                        amount_cents: dollars,
+                      });
+                    }}
+                  />
+
+                  {/* Action buttons */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "row",
+                      justifyContent: "space-around",
+                      marginTop: "12px",
+                      gap: "8px",
+                    }}
+                  >
+                    <button
+                      className="btn btn-secondary"
+                      style={{ flex: 1 }}
+                      onClick={() =>
+                        setEditing({
+                          id: u.id,
+                          name: u.name ?? "",
+                          email: u.email ?? "",
+                          phone: u.phone ?? "",
+                          status:
+                            (u.status as "active" | "disabled") ?? "active",
+                          is_admin: !!u.is_admin,
+                        })
+                      }
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-danger"
+                      style={{ flex: 1 }}
+                      onClick={() => {
+                        if (
+                          confirm(
+                            "Soft delete this user? They will be disabled and hidden."
+                          )
+                        ) {
+                          deleteUserMut.mutate(u.id);
+                        }
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+
+                  {/* Ledger (compact) */}
+                  <div
+                    className="participants-section"
+                    style={{ marginTop: 16 }}
+                  >
+                    <div className="section-header">
+                      <h4 className="section-title">Recent Ledger</h4>
+                      <span className="participant-count">
+                        {detail.data.ledger.length}
+                      </span>
+                    </div>
+                    <div>
+                      {detail.data.ledger.map((e) => (
+                        <div className="waitlist-item" key={e.id}>
+                          <div className="waitlist-info">
+                            <div className="waitlist-name">
+                              {displayKind(e.kind) != "Deposit"
+                                ? displayKind(e.kind)
+                                : e.amount_cents >= 0
+                                ? displayKind(e.kind)
+                                : "Admin withdrawal"}{" "}
+                              {mmdd(e.created_at)}
+                            </div>
+                          </div>
+                          <div
+                            className="stat-value"
+                            style={{ marginLeft: "auto" }}
+                          >
+                            {e.amount_cents >= 0 ? "+" : "-"}
+                            {formatDollarsFromCents(Math.abs(e.amount_cents))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Registrations (compact) */}
+                  <div
+                    className="participants-section"
+                    style={{ marginTop: 16 }}
+                  >
+                    <div className="section-header">
+                      <h4 className="section-title">Registrations</h4>
+                      <span className="participant-count">
+                        {detail.data.registrations.length}
+                      </span>
+                    </div>
+                    <div>
+                      {detail.data.registrations.map((r) => (
+                        <div
+                          className="participant-card"
+                          key={r.registration_id}
+                        >
+                          <div className="participant-info">
+                            <div className="participant-details">
+                              <div className="participant-name">
+                                {r.session_title || r.session_id} —{" "}
+                                {UTCtohhmmTimeForamt(new Date(r.starts_at_utc))}
+                              </div>
+                              <div className="participant-meta">
+                                {r.seats} seat(s)
+                                {r.guest_names?.length
+                                  ? ` • ${r.guest_names.join(", ")}`
+                                  : ""}
+                                {" • "}
+                                {r.state}
+                                {r.waitlist_pos ? ` #${r.waitlist_pos}` : ""}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {detail.isLoading && <div className="skeleton" />}
+                      {detail.error && (
+                        <div className="error">
+                          Failed to load user details.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
           {list.isLoading && <div className="skeleton" />}
@@ -641,142 +822,6 @@ function UsersAdminCard() {
           )}
         </div>
       </div>
-
-      {/* Detail */}
-      {selected && detail.data && (
-        <div className="participants-section">
-          <div className="section-header">
-            <h3 className="section-title">User Detail</h3>
-          </div>
-
-          <div className="participant-card">
-            <div className="participant-info">
-              <div className="participant-avatar">
-                {detail.data.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="participant-details">
-                <div className="participant-name">
-                  {detail.data.name}{" "}
-                  {detail.data.is_admin ? (
-                    <span className="guest-badge">admin</span>
-                  ) : null}
-                </div>
-                <div className="participant-meta">
-                  {detail.data.email}{" "}
-                  {detail.data.phone ? `• ${detail.data.phone}` : ""}
-                </div>
-                <div className="participant-meta">
-                  Status: <strong>{detail.data.status}</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Wallet summary + deposit */}
-          <div className="cost-display" style={{ marginTop: 12 }}>
-            <div>
-              <div className="cost-label">Available</div>
-              <div className="cost-value">
-                {formatDollarsFromCents(detail.data.wallet.available_cents)}
-              </div>
-            </div>
-            <div>
-              <div className="cost-label">Posted</div>
-              <div className="cost-value">
-                {formatDollarsFromCents(detail.data.wallet.posted_cents)}
-              </div>
-            </div>
-            <div>
-              <div className="cost-label">Holds</div>
-              <div className="cost-value">
-                {formatDollarsFromCents(detail.data.wallet.holds_cents)}
-              </div>
-            </div>
-          </div>
-
-          <DepositBox
-            busy={deposit.isPending}
-            onSubmit={(dollars) => {
-              deposit.mutate({
-                user_id: selected,
-                amount_cents: dollars,
-              });
-            }}
-            // errorText={
-            //   deposit.isError
-            //     ? String((deposit.error as any)?.message || "Deposit failed")
-            //     : null
-            // }
-          />
-
-          {/* Ledger (compact) */}
-          <div className="participants-section">
-            <div className="section-header">
-              <h4 className="section-title">Recent Ledger</h4>
-              <span className="participant-count">
-                {detail.data.ledger.length}
-              </span>
-            </div>
-            <div>
-              {detail.data.ledger.map((e) => (
-                <div className="waitlist-item" key={e.id}>
-                  <div className="waitlist-info">
-                    <div className="waitlist-name">
-                      {displayKind(e.kind) != "Deposit"
-                        ? displayKind(e.kind)
-                        : e.amount_cents >= 0
-                        ? displayKind(e.kind)
-                        : "Admin withdrawal"}{" "}
-                      {mmdd(e.created_at)}
-                    </div>
-                  </div>
-                  <div className="stat-value" style={{ marginLeft: "auto" }}>
-                    {e.amount_cents >= 0 ? "+" : "-"}
-                    {formatDollarsFromCents(Math.abs(e.amount_cents))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Registrations (compact) */}
-          <div className="participants-section">
-            <div className="section-header">
-              <h4 className="section-title">Registrations</h4>
-              <span className="participant-count">
-                {detail.data.registrations.length}
-              </span>
-            </div>
-            <div>
-              {detail.data.registrations.map((r) => (
-                <div className="participant-card" key={r.registration_id}>
-                  <div className="participant-info">
-                    <div className="participant-details">
-                      <div className="participant-name">
-                        {r.session_title || r.session_id} —{" "}
-                        {UTCtohhmmTimeForamt(new Date(r.starts_at_utc))} (
-                      </div>
-                      <div className="participant-meta">
-                        {r.seats} seat(s)
-                        {r.guest_names?.length
-                          ? ` • ${r.guest_names.join(", ")}`
-                          : ""}
-                        {" • "}
-                        {r.state}
-                        {r.waitlist_pos ? ` #${r.waitlist_pos}` : ""}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {detail.isLoading && <div className="skeleton" />}
-              {detail.error && (
-                <div className="error">Failed to load user details.</div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {editing && (
         <div className="modal-overlay" onClick={() => setEditing(null)}>
           <div
@@ -909,10 +954,12 @@ function UsersAdminCard() {
 function DepositBox({
   onSubmit,
   busy,
+  onSuccess,
 }: //   errorText,
 {
   onSubmit: (amountDollars: number) => void;
   busy: boolean;
+  onSuccess?: () => void;
   //   errorText: string | null;
 }) {
   const [amount, setAmount] = useState<string>("");
@@ -936,7 +983,11 @@ function DepositBox({
       <button
         className="btn btn-secondary"
         disabled={!ok || busy}
-        onClick={() => onSubmit(Number(amount) * 100)}
+        onClick={() => {
+          onSubmit(Number(amount) * 100);
+          // Clear input after submit
+          setAmount("");
+        }}
       >
         {busy ? "Depositing…" : "Deposit"}
       </button>

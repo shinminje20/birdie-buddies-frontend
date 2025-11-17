@@ -41,7 +41,7 @@ export default function SessionDetailPage() {
   const wallet = useQuery({
     queryKey: ["wallet", user?.id],
     queryFn: () => getMyWallet(),
-    enabled: !!user, // fetch only when logged in
+    enabled: !!user,
   });
 
   const refetchAll = useCallback(async () => {
@@ -111,8 +111,68 @@ export default function SessionDetailPage() {
     myRegs.find((r) => !r.guest_names || r.guest_names.length === 0) ??
     null;
 
+  // Separate guest registrations (created via AddGuestInline)
+  const guestRegs = myRegs.filter(
+    (r) =>
+      r.registration_id !== hostReg?.registration_id &&
+      r.seats === 1 &&
+      r.guest_names &&
+      r.guest_names.length > 0
+  );
+
   const myActiveSeatCount = myRegs.reduce((sum, r) => sum + (r.seats || 0), 0);
   const hasMyReg = myRegs.length > 0;
+
+  // Compute detailed registration status message
+  const registrationStatusMessage = useMemo(() => {
+    if (myRegs.length === 0) return "";
+
+    const confirmedRegs = myRegs.filter((r) => r.state === "confirmed");
+    const waitlistedRegs = myRegs.filter((r) => r.state === "waitlisted");
+
+    const confirmedCount = confirmedRegs.reduce(
+      (sum, r) => sum + (r.seats || 0),
+      0
+    );
+    const waitlistedCount = waitlistedRegs.reduce(
+      (sum, r) => sum + (r.seats || 0),
+      0
+    );
+
+    // All confirmed
+    if (waitlistedCount === 0) {
+      return confirmedCount === 1
+        ? "✅ You are confirmed!"
+        : `✅ You and ${confirmedCount - 1} guest${
+            confirmedCount - 1 > 1 ? "s" : ""
+          } are confirmed!`;
+    }
+
+    // All waitlisted
+    if (confirmedCount === 0) {
+      const waitlistPos = waitlistedRegs[0]?.waitlist_pos;
+      return waitlistedCount === 1
+        ? `⏳ You are waitlisted${
+            waitlistPos ? ` (position #${waitlistPos})` : ""
+          }`
+        : `⏳ You and ${waitlistedCount - 1} guest${
+            waitlistedCount - 1 > 1 ? "s" : ""
+          } are waitlisted${waitlistPos ? ` (position #${waitlistPos})` : ""}`;
+    }
+
+    // Mixed: some confirmed, some waitlisted
+    const confirmedText =
+      confirmedCount === 1
+        ? "You are confirmed"
+        : `You and ${confirmedCount - 1} guest${
+            confirmedCount - 1 > 1 ? "s" : ""
+          } are confirmed`;
+    const waitlistedText =
+      waitlistedCount === 1
+        ? "1 guest is waitlisted"
+        : `${waitlistedCount} guests are waitlisted`;
+    return `✅ ${confirmedText}, but ⏳ ${waitlistedText}`;
+  }, [myRegs]);
 
   const feeDisplay = sess.data
     ? formatDollarsFromCents(sess.data.fee_cents)
@@ -124,6 +184,17 @@ export default function SessionDetailPage() {
   const requiredCents = sess.data ? Number(sess.data.fee_cents) * seats : 0;
   const availableCents = wallet.data?.available_cents ?? 0;
   const canAfford = availableCents >= requiredCents;
+
+  // Check if cancellation is locked (within 1 hour of session start)
+  const isCancellationLocked = useMemo(() => {
+    if (!sess.data) return false;
+    const now = new Date();
+    const sessionStart = new Date(sess.data.starts_at_utc);
+    const oneHourBeforeStart = new Date(
+      sessionStart.getTime() - 60 * 60 * 1000
+    );
+    return now >= oneHourBeforeStart;
+  }, [sess.data]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -293,19 +364,40 @@ export default function SessionDetailPage() {
           ) : (
             <>
               <FlashBanners />
-              <div className="info-banner" style={{ marginBottom: 8 }}>
-                You are registered!
+              <div
+                className={
+                  myRegs.some((r) => r.state === "waitlisted")
+                    ? "warning-banner"
+                    : "info-banner"
+                }
+                style={{ marginBottom: 8 }}
+              >
+                {registrationStatusMessage}
               </div>
+
+              {isCancellationLocked && (
+                <div className="warning-banner" style={{ marginTop: 8 }}>
+                  🔒 Cancellation locked: Session starts within 1 hour
+                </div>
+              )}
 
               {hostReg && (
                 <button
                   className="btn btn-danger"
                   style={{ marginTop: 8 }}
-                  disabled={isCanceling}
+                  disabled={isCanceling || isCancellationLocked}
                   onClick={async () => {
-                    const confirmed = window.confirm(
-                      "Are you sure you want to cancel your registration? This action cannot be undone."
-                    );
+                    if (isCancellationLocked) {
+                      flashWarn(
+                        "Cancellation is locked within 1 hour of session start"
+                      );
+                      return;
+                    }
+                    const warningMessage =
+                      guestRegs.length > 0
+                        ? `Are you sure you want to cancel your registration? This will also cancel ALL ${guestRegs.length} guest registration(s). This action cannot be undone.`
+                        : "Are you sure you want to cancel your registration? This action cannot be undone.";
+                    const confirmed = window.confirm(warningMessage);
                     if (confirmed) {
                       setIsCanceling(true);
                       try {
@@ -373,12 +465,130 @@ export default function SessionDetailPage() {
                   You've reached the maximum 2 guests.
                 </div>
               )}
+
+              {/* Individual Guest Registrations List */}
+              {guestRegs.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      marginBottom: 8,
+                      fontSize: "14px",
+                      color: "var(--dark)",
+                    }}
+                  >
+                    Your Guests:
+                  </div>
+                  {guestRegs.map((guestReg) => (
+                    <div
+                      key={guestReg.registration_id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "10px 12px",
+                        background: "white",
+                        border: "1px solid var(--border)",
+                        borderRadius: "var(--radius-sm)",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            fontSize: "14px",
+                            color: "var(--dark)",
+                          }}
+                        >
+                          {guestReg.guest_names?.[0] || "Guest"}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            color: "var(--medium)",
+                            marginTop: "2px",
+                          }}
+                        >
+                          {guestReg.state === "confirmed" ? (
+                            <span>✅ Confirmed</span>
+                          ) : (
+                            <span>
+                              ⏳ Waitlisted
+                              {guestReg.waitlist_pos
+                                ? ` (position #${guestReg.waitlist_pos})`
+                                : ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        className="action-btn danger"
+                        disabled={isCanceling || isCancellationLocked}
+                        onClick={async () => {
+                          if (isCancellationLocked) {
+                            flashWarn(
+                              "Cancellation is locked within 1 hour of session start"
+                            );
+                            return;
+                          }
+                          const confirmed = window.confirm(
+                            `Are you sure you want to cancel ${
+                              guestReg.guest_names?.[0] || "this guest"
+                            }'s registration?`
+                          );
+                          if (confirmed) {
+                            setIsCanceling(true);
+                            try {
+                              await cancelRegistration(
+                                guestReg.registration_id
+                              );
+
+                              // Wait for backend to process
+                              await new Promise((resolve) =>
+                                setTimeout(resolve, 500)
+                              );
+
+                              // Refetch data
+                              await Promise.all([
+                                qc.refetchQueries({
+                                  queryKey: ["session", id],
+                                }),
+                                qc.refetchQueries({ queryKey: ["regs", id] }),
+                                qc.refetchQueries({
+                                  queryKey: ["wallet", user?.id],
+                                }),
+                              ]);
+
+                              flashSuccess(
+                                `${
+                                  guestReg.guest_names?.[0] || "Guest"
+                                }'s registration canceled successfully`
+                              );
+                            } catch (error) {
+                              console.error("Cancellation error:", error);
+                              flashWarn(
+                                "Failed to cancel registration. Please try again."
+                              );
+                            } finally {
+                              setIsCanceling(false);
+                            }
+                          }
+                        }}
+                      >
+                        {isCanceling ? "..." : "Cancel"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
           <div className="cancellation-note">
             <strong>⚠️ Cancellation Policy:</strong> Full refund before
-            midnight. 50% penalty for same-day cancellation.
+            midnight. 50% penalty for same-day cancellation. Cancellations are
+            locked 1 hour before session start.
           </div>
         </div>
 
@@ -450,11 +660,15 @@ export default function SessionDetailPage() {
                     </div>
                   </div>
                 </div>
-                {r.host_user_id === user?.id && (
+                {/* {r.host_user_id === user?.id && (
                   <button
                     className="action-btn danger"
-                    disabled={isCanceling}
+                    disabled={isCanceling || isCancellationLocked}
                     onClick={async () => {
+                      if (isCancellationLocked) {
+                        flashWarn("Cancellation is locked within 1 hour of session start");
+                        return;
+                      }
                       const confirmed = window.confirm(
                         "Are you sure you want to cancel your waitlist registration?"
                       );
@@ -513,7 +727,7 @@ export default function SessionDetailPage() {
                   >
                     {isCanceling ? "..." : "Cancel"}
                   </button>
-                )}
+                )} */}
               </div>
             ))}
           </div>
