@@ -55,11 +55,8 @@ export default function SessionsPage() {
       setPastSessions([]);
       setOffset(0);
       setHasMore(true);
-    } else if (showPastSessions && pastSessionsData) {
-      // When toggling ON, immediately update with fetched data
-      setPastSessions(pastSessionsData);
     }
-  }, [showPastSessions, pastSessionsData]);
+  }, [showPastSessions]);
 
   const handleToggle = () => {
     setShowPastSessions(!showPastSessions);
@@ -69,7 +66,10 @@ export default function SessionsPage() {
     setOffset(prev => prev + limit);
   };
 
-  const displayData = showPastSessions ? pastSessions : upcomingSessions;
+  // Use query data directly when offset is 0, otherwise use accumulated state
+  const displayData = showPastSessions
+    ? (offset === 0 ? (pastSessionsData ?? pastSessions) : pastSessions)
+    : upcomingSessions;
   const displayLoading = showPastSessions ? isLoadingPast : isLoading;
   const displayError = showPastSessions ? pastError : error;
 
