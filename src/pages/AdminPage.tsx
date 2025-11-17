@@ -954,12 +954,10 @@ function UsersAdminCard() {
 function DepositBox({
   onSubmit,
   busy,
-  onSuccess,
 }: //   errorText,
 {
   onSubmit: (amountDollars: number) => void;
   busy: boolean;
-  onSuccess?: () => void;
   //   errorText: string | null;
 }) {
   const [amount, setAmount] = useState<string>("");

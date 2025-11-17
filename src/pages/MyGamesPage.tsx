@@ -37,12 +37,12 @@ export default function MyGamesPage() {
       if (!existing) {
         sessionMap.set(r.session_id, {
           session_id: r.session_id,
-          session_title: r.session_title,
+          session_title: r.session_title ?? null,
           starts_at_utc: r.starts_at_utc,
           confirmedCount: r.state === "confirmed" ? r.seats : 0,
           waitlistedCount: r.state === "waitlisted" ? r.seats : 0,
           lowestWaitlistPos:
-            r.state === "waitlisted" ? r.waitlist_pos : null,
+            r.state === "waitlisted" ? (r.waitlist_pos ?? null) : null,
         });
       } else {
         if (r.state === "confirmed") {
