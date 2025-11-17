@@ -743,27 +743,48 @@ function UsersAdminCard() {
                       </span>
                     </div>
                     <div>
-                      {detail.data.ledger.map((e) => (
-                        <div className="waitlist-item" key={e.id}>
-                          <div className="waitlist-info">
-                            <div className="waitlist-name">
-                              {displayKind(e.kind) != "Deposit"
-                                ? displayKind(e.kind)
-                                : e.amount_cents >= 0
-                                ? displayKind(e.kind)
-                                : "Admin withdrawal"}{" "}
-                              {mmdd(e.created_at)}
+                      {detail.data.ledger.map((e) => {
+                        const kindLabel =
+                          displayKind(e.kind) != "Deposit"
+                            ? displayKind(e.kind)
+                            : e.amount_cents >= 0
+                            ? displayKind(e.kind)
+                            : "Admin withdrawal";
+
+                        let label = "";
+                        let dateToShow = "";
+
+                        if (e.session_title && e.starts_at_utc) {
+                          const sessionDate = mmdd(e.starts_at_utc);
+                          label = `${e.session_title} - ${kindLabel}`;
+                          dateToShow = sessionDate; // Show session date
+                        } else if (e.session_id && e.starts_at_utc) {
+                          const sessionDate = mmdd(e.starts_at_utc);
+                          label = `Session - ${kindLabel}`;
+                          dateToShow = sessionDate; // Show session date
+                        } else {
+                          label = kindLabel;
+                          dateToShow = mmdd(e.created_at); // Show transaction date for non-session entries
+                        }
+
+                        return (
+                          <div className="waitlist-item" key={e.id}>
+                            <div className="waitlist-info">
+                              <div className="waitlist-name">{label}</div>
+                              <div className="waitlist-seats" style={{ fontSize: "0.85em", color: "var(--medium)" }}>
+                                {dateToShow}
+                              </div>
+                            </div>
+                            <div
+                              className="stat-value"
+                              style={{ marginLeft: "auto" }}
+                            >
+                              {e.amount_cents >= 0 ? "+" : "-"}
+                              {formatDollarsFromCents(Math.abs(e.amount_cents))}
                             </div>
                           </div>
-                          <div
-                            className="stat-value"
-                            style={{ marginLeft: "auto" }}
-                          >
-                            {e.amount_cents >= 0 ? "+" : "-"}
-                            {formatDollarsFromCents(Math.abs(e.amount_cents))}
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

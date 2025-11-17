@@ -142,8 +142,8 @@ export default function SessionDetailPage() {
     // All confirmed
     if (waitlistedCount === 0) {
       return confirmedCount === 1
-        ? "✅ You are confirmed!"
-        : `✅ You and ${confirmedCount - 1} guest${
+        ? "You are confirmed!"
+        : `You and ${confirmedCount - 1} guest${
             confirmedCount - 1 > 1 ? "s" : ""
           } are confirmed!`;
     }

@@ -75,6 +75,8 @@ export type WalletLedgerRow = {
   session_id?: string | null;
   registration_id?: string | null;
   created_at: string;
+  session_title?: string | null;  // For display purposes
+  starts_at_utc?: string | null;  // For display purposes
 }; // /wallet/me/ledger :contentReference[oaicite:6]{index=6}
 
 // Keep the existing function but make it more robust
@@ -384,6 +386,8 @@ export type AdminLedgerRow = {
   session_id?: string | null;
   registration_id?: string | null;
   created_at: string; // ISO
+  session_title?: string | null;  // For display purposes
+  starts_at_utc?: string | null;  // For display purposes
 };
 
 export type AdminRegistrationRow = {

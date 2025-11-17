@@ -23,6 +23,8 @@ export default function MyGamesPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["me/registrations", showPastSessions],
     queryFn: () => myRegistrations(showPastSessions),
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Always refetch when component mounts
   });
 
   // Group registrations by session

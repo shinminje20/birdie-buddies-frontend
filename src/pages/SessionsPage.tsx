@@ -27,11 +27,14 @@ export default function SessionsPage() {
   const {
     data: pastSessionsData,
     isLoading: isLoadingPast,
-    error: pastError
+    error: pastError,
+    refetch: refetchPastSessions
   } = useQuery({
     queryKey: ["sessions", "history", offset],
     queryFn: () => adminListSessionHistory(limit, offset),
     enabled: user?.is_admin === true && showPastSessions,
+    staleTime: 0, // Always consider data stale
+    refetchOnMount: true, // Always refetch when component mounts
   });
 
   // Update past sessions when data changes
@@ -44,16 +47,22 @@ export default function SessionsPage() {
       }
       setHasMore(pastSessionsData.length === limit);
     }
-  }, [pastSessionsData, offset]);
+  }, [pastSessionsData, offset, limit]);
+
+  // Reset state when toggling OFF past sessions
+  useEffect(() => {
+    if (!showPastSessions) {
+      setPastSessions([]);
+      setOffset(0);
+      setHasMore(true);
+    } else if (showPastSessions && pastSessionsData) {
+      // When toggling ON, immediately update with fetched data
+      setPastSessions(pastSessionsData);
+    }
+  }, [showPastSessions, pastSessionsData]);
 
   const handleToggle = () => {
     setShowPastSessions(!showPastSessions);
-    if (!showPastSessions) {
-      // Reset pagination when switching to past sessions
-      setOffset(0);
-      setPastSessions([]);
-      setHasMore(true);
-    }
   };
 
   const handleLoadMore = () => {
