@@ -19,7 +19,11 @@ export default function SessionsPage() {
   const [hasMore, setHasMore] = useState(true);
   const limit = 15;
 
-  const { data: upcomingSessions, isLoading, error } = useQuery({
+  const {
+    data: upcomingSessions,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["sessions"],
     queryFn: listSessions,
   });
@@ -28,7 +32,6 @@ export default function SessionsPage() {
     data: pastSessionsData,
     isLoading: isLoadingPast,
     error: pastError,
-    refetch: refetchPastSessions
   } = useQuery({
     queryKey: ["sessions", "history", offset],
     queryFn: () => adminListSessionHistory(limit, offset),
@@ -43,7 +46,7 @@ export default function SessionsPage() {
       if (offset === 0) {
         setPastSessions(pastSessionsData);
       } else {
-        setPastSessions(prev => [...prev, ...pastSessionsData]);
+        setPastSessions((prev) => [...prev, ...pastSessionsData]);
       }
       setHasMore(pastSessionsData.length === limit);
     }
@@ -63,12 +66,14 @@ export default function SessionsPage() {
   };
 
   const handleLoadMore = () => {
-    setOffset(prev => prev + limit);
+    setOffset((prev) => prev + limit);
   };
 
   // Use query data directly when offset is 0, otherwise use accumulated state
   const displayData = showPastSessions
-    ? (offset === 0 ? (pastSessionsData ?? pastSessions) : pastSessions)
+    ? offset === 0
+      ? pastSessionsData ?? pastSessions
+      : pastSessions
     : upcomingSessions;
   const displayLoading = showPastSessions ? isLoadingPast : isLoading;
   const displayError = showPastSessions ? pastError : error;
@@ -147,14 +152,14 @@ export default function SessionsPage() {
         )}
       </div>
 
-      {showPastSessions && hasMore && !isLoadingPast && (displayData?.length ?? 0) > 0 && (
-        <button
-          onClick={handleLoadMore}
-          className="load-more-button"
-        >
-          Load More
-        </button>
-      )}
+      {showPastSessions &&
+        hasMore &&
+        !isLoadingPast &&
+        (displayData?.length ?? 0) > 0 && (
+          <button onClick={handleLoadMore} className="load-more-button">
+            Load More
+          </button>
+        )}
 
       {showPastSessions && isLoadingPast && offset > 0 && (
         <div className="loading-more">Loading...</div>
