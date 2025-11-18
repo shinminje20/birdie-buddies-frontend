@@ -539,7 +539,7 @@ function UsersAdminCard() {
 
   const list = useQuery({
     queryKey: ["admin-users", q],
-    queryFn: () => adminListUsers(q, 100, 0),
+    queryFn: () => adminListUsers(q, 200, 0),
   });
 
   const detail = useQuery({
