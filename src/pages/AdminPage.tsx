@@ -539,7 +539,7 @@ function UsersAdminCard() {
 
   const list = useQuery({
     queryKey: ["admin-users", q],
-    queryFn: () => adminListUsers(q, 50, 0),
+    queryFn: () => adminListUsers(q, 100, 0),
   });
 
   const detail = useQuery({
@@ -771,7 +771,13 @@ function UsersAdminCard() {
                           <div className="waitlist-item" key={e.id}>
                             <div className="waitlist-info">
                               <div className="waitlist-name">{label}</div>
-                              <div className="waitlist-seats" style={{ fontSize: "0.85em", color: "var(--medium)" }}>
+                              <div
+                                className="waitlist-seats"
+                                style={{
+                                  fontSize: "0.85em",
+                                  color: "var(--medium)",
+                                }}
+                              >
                                 {dateToShow}
                               </div>
                             </div>
