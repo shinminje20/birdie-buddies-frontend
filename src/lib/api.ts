@@ -75,13 +75,13 @@ export type WalletLedgerRow = {
   session_id?: string | null;
   registration_id?: string | null;
   created_at: string;
-  session_title?: string | null;  // For display purposes
-  starts_at_utc?: string | null;  // For display purposes
+  session_title?: string | null; // For display purposes
+  starts_at_utc?: string | null; // For display purposes
 }; // /wallet/me/ledger :contentReference[oaicite:6]{index=6}
 
 // Keep the existing function but make it more robust
 export function dollarsFromCents(v: number | null | undefined): string {
-  return (Number(v ?? 0) / 100).toFixed(1);
+  return (Number(v ?? 0) / 100).toFixed(2);
 }
 
 // Add a formatted version that includes the $ symbol
@@ -183,7 +183,10 @@ export async function getSession(sessionId: string): Promise<Session> {
 }
 
 /* -------- Admin: Session History -------- */
-export async function adminListSessionHistory(limit = 15, offset = 0): Promise<Session[]> {
+export async function adminListSessionHistory(
+  limit = 15,
+  offset = 0
+): Promise<Session[]> {
   const params = new URLSearchParams({
     limit: String(limit),
     offset: String(offset),
@@ -215,7 +218,9 @@ export async function listRegistrationsForSession(
 //   return { rows, nextOffset: rows.length < limit ? undefined : offset + limit };
 // }
 
-export async function myRegistrations(showPast = false): Promise<MyRegistration[]> {
+export async function myRegistrations(
+  showPast = false
+): Promise<MyRegistration[]> {
   const params = showPast ? "?show_past=true" : "";
   return http<MyRegistration[]>(`/me/registrations${params}`);
 }
@@ -386,8 +391,8 @@ export type AdminLedgerRow = {
   session_id?: string | null;
   registration_id?: string | null;
   created_at: string; // ISO
-  session_title?: string | null;  // For display purposes
-  starts_at_utc?: string | null;  // For display purposes
+  session_title?: string | null; // For display purposes
+  starts_at_utc?: string | null; // For display purposes
 };
 
 export type AdminRegistrationRow = {
