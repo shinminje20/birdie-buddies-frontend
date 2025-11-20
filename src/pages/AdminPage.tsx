@@ -27,6 +27,7 @@ import FlashBanners from "../components/UI/FlashBanners";
 import { flashSuccess, flashError } from "../lib/flash";
 import ClickDropdown, { type Option } from "../components/UI/ClickDropdown";
 import { formatDollarsFromCents } from "../lib/api";
+import { useDebounce } from "../hooks/useDebounce";
 
 /* ---------------- Helpers ---------------- */
 
@@ -534,12 +535,13 @@ type EditState = {
 
 function UsersAdminCard() {
   const [q, setQ] = useState("");
+  const debouncedQ = useDebounce(q, 450); // Debounce search query by 450ms for mobile typing
   const [selected, setSelected] = useState<string | null>(null);
   const [editing, setEditing] = useState<EditState | null>(null);
 
   const list = useQuery({
-    queryKey: ["admin-users", q],
-    queryFn: () => adminListUsers(q, 200, 0),
+    queryKey: ["admin-users", debouncedQ],
+    queryFn: () => adminListUsers(debouncedQ, 200, 0),
   });
 
   const detail = useQuery({
@@ -1056,12 +1058,13 @@ const PreregEditor: React.FC<{
   // --- Picker state (reuses existing adminListUsers API) ---
   const [pickerOpen, setPickerOpen] = React.useState(false);
   const [pickerQuery, setPickerQuery] = React.useState("");
+  const debouncedPickerQuery = useDebounce(pickerQuery, 450); // Debounce picker search by 450ms for mobile typing
   const [limit, setLimit] = React.useState(20);
   const [offset, setOffset] = React.useState(0);
 
   const usersQ = useQuery({
-    queryKey: ["admin-users-picker", pickerQuery, limit, offset],
-    queryFn: async () => adminListUsers(pickerQuery, limit, offset),
+    queryKey: ["admin-users-picker", debouncedPickerQuery, limit, offset],
+    queryFn: async () => adminListUsers(debouncedPickerQuery, limit, offset),
     placeholderData: keepPreviousData,
     staleTime: 30_000,
   });
