@@ -20,6 +20,7 @@ export type Session = {
   created_at: string;
   confirmed_seats: number;
   remaining_seats: number;
+  waitlist_seats: number;
 }; // /sessions*, SessionWithStatsOut :contentReference[oaicite:1]{index=1}
 
 export type RegRow = {

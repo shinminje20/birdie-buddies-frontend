@@ -133,8 +133,8 @@ export default function SessionsPage() {
                 <div className="stat-label">Registered</div>
               </div>
               <div className="stat-item">
-                <div className="stat-value">{s.remaining_seats}</div>
-                <div className="stat-label">Available</div>
+                <div className="stat-value">{s.waitlist_seats}</div>
+                <div className="stat-label">Waitlist</div>
               </div>
               <div className="stat-item">
                 <div className="stat-value">
