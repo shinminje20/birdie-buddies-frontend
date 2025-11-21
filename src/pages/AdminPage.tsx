@@ -991,7 +991,7 @@ function DepositBox({
 }) {
   const [amount, setAmount] = useState<string>("");
   const parsed = Number(amount);
-  const ok = !Number.isNaN(parsed);
+  const ok = Number.isFinite(parsed);
 
   return (
     <div className="detail-container" style={{ marginTop: 12 }}>
@@ -1011,7 +1011,10 @@ function DepositBox({
         className="btn btn-secondary"
         disabled={!ok || busy}
         onClick={() => {
-          onSubmit(Number(amount) * 100);
+          const dollars = Number(amount);
+          if (!Number.isFinite(dollars)) return;
+          const cents = Math.round(dollars * 100);
+          onSubmit(cents);
           // Clear input after submit
           setAmount("");
         }}
