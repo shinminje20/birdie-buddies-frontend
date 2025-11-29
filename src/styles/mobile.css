@@ -224,11 +224,11 @@
      transition: transform 0.3s;
  }
 
- .toggle-checkbox:checked + .toggle-slider {
+ .toggle-checkbox:checked+.toggle-slider {
      background-color: var(--primary);
  }
 
- .toggle-checkbox:checked + .toggle-slider::before {
+ .toggle-checkbox:checked+.toggle-slider::before {
      transform: translateX(20px);
  }
 
@@ -346,6 +346,7 @@
      background: rgba(255, 255, 255, 0.95);
      backdrop-filter: blur(10px);
      border-radius: var(--radius-lg);
+     margin-top: 12px;
      padding: 20px 16px;
      box-shadow: var(--shadow-lg);
      gap: 12px
@@ -364,6 +365,7 @@
      font-size: 14px;
      margin-bottom: 16px;
  }
+
 
  .detail-header {
      padding-bottom: 20px;
@@ -844,6 +846,32 @@
      font-size: 14px;
  }
 
+ .admin-header-container {
+     /* border: 2px solid var(--primary); */
+     border-radius: 8px;
+     padding: 8px;
+
+     /* border-bottom: 2px solid var(--border); */
+ }
+
+ .admin-header {
+     font-weight: bold;
+     color: var(--primary);
+     font-size: larger;
+     padding: 8px;
+ }
+
+ .stat-container {
+     margin-top: 8px;
+     margin-bottom: 8px;
+ }
+
+ .stat-info {
+     display: grid;
+     grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+     gap: 4,
+ }
+
  /* Responsive adjustments for very small screens */
  @media (max-width: 360px) {
      .page-title {
@@ -1268,4 +1296,30 @@
      padding: 40px 20px;
      color: var(--medium);
      font-size: 15px;
+ }
+
+
+ /* Logo.css */
+
+ /* Define the wing flap motion */
+ @keyframes flap {
+
+     0%,
+     100% {
+         transform: rotate(0deg);
+     }
+
+     50% {
+         transform: rotate(15deg);
+     }
+ }
+
+ /* Target the wing element INSIDE the BirdLogo component */
+ /* You target the outer container first, then the internal element by its ID */
+ .animated-bird-logo #bird-wing {
+     /* This value is for example; you must find the exact X Y of the shoulder */
+     transform-origin: 75% 25%;
+
+     /* Apply the animation */
+     animation: flap 0.3s infinite alternate ease-in-out;
  }

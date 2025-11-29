@@ -21,6 +21,8 @@ import {
   adminPatchUser,
   adminDeleteUser,
   type AdminUserRow,
+  adminWalletSummary,
+  type WalletTotals,
 } from "../lib/api";
 
 import FlashBanners from "../components/UI/FlashBanners";
@@ -113,6 +115,10 @@ type Tab = "create" | "update" | "users";
 export default function AdminPage() {
   const qc = useQueryClient();
   const [tab, setTab] = useState<Tab>("create");
+  const walletTotals = useQuery<WalletTotals>({
+    queryKey: ["admin-wallet-summary"],
+    queryFn: adminWalletSummary,
+  });
 
   return (
     <MobileShell>
@@ -121,12 +127,58 @@ export default function AdminPage() {
       <div className="detail-container" style={{ gap: 16 }}>
         <FlashBanners />
 
+        <div className="admin-header-container">
+          {walletTotals.isLoading ? (
+            <div className="skeleton" style={{ height: 56, width: "100%" }} />
+          ) : walletTotals.error ? (
+            <div className="error">Failed to load wallet totals.</div>
+          ) : walletTotals.data ? (
+            <div className="stat-container">
+              <div className="admin-header">Financial Status</div>
+              <div className="stat-info">
+                <div className="stat-item">
+                  <div className="stat-value">
+                    {formatDollarsFromCents(
+                      walletTotals.data.total_posted_cents
+                    )}
+                  </div>
+                  <div className="stat-label">Total Posted</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">
+                    {formatDollarsFromCents(
+                      walletTotals.data.total_holds_cents
+                    )}
+                  </div>
+                  <div className="stat-label">Total Holds</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">
+                    {formatDollarsFromCents(
+                      walletTotals.data.total_available_cents
+                    )}
+                  </div>
+                  <div className="stat-label">Total Available</div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
         {/* Horizontally scrollable tab strip */}
         <div
           className="filter-tabs scroll-x"
           role="tablist"
           aria-label="Admin sections"
         >
+          <button
+            className={`filter-tab ${tab === "users" ? "active" : ""}`}
+            onClick={() => setTab("users")}
+            role="tab"
+            aria-selected={tab === "users"}
+          >
+            Users
+          </button>
           <button
             className={`filter-tab ${tab === "create" ? "active" : ""}`}
             onClick={() => setTab("create")}
@@ -142,14 +194,6 @@ export default function AdminPage() {
             aria-selected={tab === "update"}
           >
             Update Session
-          </button>
-          <button
-            className={`filter-tab ${tab === "users" ? "active" : ""}`}
-            onClick={() => setTab("users")}
-            role="tab"
-            aria-selected={tab === "users"}
-          >
-            Users
           </button>
         </div>
 

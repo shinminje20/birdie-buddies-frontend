@@ -86,13 +86,29 @@ export default function WalletPage() {
 
           <div>
             {rows.map((e: WalletLedgerRow) => {
-              const label = `${
+              // Build label with session title if available
+              let label = "";
+              let dateToShow = "";
+              const kindLabel =
                 displayKind(e.kind) != "Deposit"
                   ? displayKind(e.kind)
                   : e.amount_cents >= 0
                   ? displayKind(e.kind)
-                  : "Admin withdrawal"
-              } ${mmdd(e.created_at)}`;
+                  : "Admin withdrawal";
+
+              if (e.session_title && e.starts_at_utc) {
+                const sessionDate = mmdd(e.starts_at_utc);
+                label = `${e.session_title} - ${kindLabel}`;
+                dateToShow = sessionDate; // Show session date
+              } else if (e.session_id && e.starts_at_utc) {
+                const sessionDate = mmdd(e.starts_at_utc);
+                label = `Session - ${kindLabel}`;
+                dateToShow = sessionDate; // Show session date
+              } else {
+                label = `${kindLabel}`;
+                dateToShow = mmdd(e.created_at); // Show transaction date for non-session entries
+              }
+
               const sign = e.amount_cents >= 0 ? "+" : "-";
               const amt = formatDollarsFromCents(Math.abs(e.amount_cents));
               return (
@@ -103,6 +119,12 @@ export default function WalletPage() {
                 >
                   <div className="waitlist-info">
                     <div className="waitlist-name">{label}</div>
+                    <div
+                      className="waitlist-seats"
+                      style={{ fontSize: "0.85em", color: "var(--medium)" }}
+                    >
+                      {dateToShow}
+                    </div>
                   </div>
                   <div className="stat-value" style={{ marginLeft: "auto" }}>
                     {sign}

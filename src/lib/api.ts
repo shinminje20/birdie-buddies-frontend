@@ -68,6 +68,11 @@ export type Wallet = {
   holds_cents: number;
   available_cents: number;
 }; // /wallet/me :contentReference[oaicite:5]{index=5}
+export type WalletTotals = {
+  total_posted_cents: number;
+  total_holds_cents: number;
+  total_available_cents: number;
+}; // /admin/wallets/summary
 
 export type WalletLedgerRow = {
   id: number;
@@ -277,6 +282,10 @@ export async function getMyWalletLedger(
     ...(beforeId ? { before_id: String(beforeId) } : {}),
   });
   return http<WalletLedgerRow[]>(`/wallet/me/ledger?${q.toString()}`); // :contentReference[oaicite:19]{index=19}
+}
+
+export function adminWalletSummary(): Promise<WalletTotals> {
+  return http<WalletTotals>("/admin/wallets/summary", { method: "GET" });
 }
 
 /* -------- Admin (create session) -------- */
