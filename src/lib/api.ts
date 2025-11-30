@@ -31,6 +31,8 @@ export type RegRow = {
   guest_names?: string[] | null;
   waitlist_pos?: number | null;
   state: "confirmed" | "waitlisted" | "canceled";
+  group_key?: string | null;
+  is_host?: boolean;
 };
 
 export type MyRegistration = {
@@ -44,6 +46,8 @@ export type MyRegistration = {
   guest_names?: string[] | null;
   waitlist_pos?: number | null;
   state: "confirmed" | "waitlisted" | "canceled";
+  group_key?: string | null;
+  is_host?: boolean;
 }; // list regs for a session + my regs :contentReference[oaicite:2]{index=2}
 
 export type RequestStatus = {

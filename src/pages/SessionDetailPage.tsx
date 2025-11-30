@@ -107,18 +107,35 @@ export default function SessionDetailPage() {
   );
 
   const hostReg =
+    myRegs.find((r) => r.is_host) ??
     myRegs.find((r) => r.seats > 1) ??
     myRegs.find((r) => !r.guest_names || r.guest_names.length === 0) ??
     null;
 
-  // Separate guest registrations (created via AddGuestInline)
-  const guestRegs = myRegs.filter(
-    (r) =>
-      r.registration_id !== hostReg?.registration_id &&
-      r.seats === 1 &&
-      r.guest_names &&
-      r.guest_names.length > 0
-  );
+  // Separate guest registrations (created via AddGuestInline). Includes confirmed and waitlisted guests.
+  const guestRegs = useMemo(() => {
+    if (!hostReg) return [];
+
+    if (hostReg.group_key) {
+      return myRegs.filter(
+        (r) =>
+          r.group_key === hostReg.group_key &&
+          !r.is_host &&
+          r.state !== "canceled" &&
+          r.guest_names &&
+          r.guest_names.length > 0
+      );
+    }
+
+    return myRegs.filter(
+      (r) =>
+        r.registration_id !== hostReg.registration_id &&
+        r.state !== "canceled" &&
+        r.seats === 1 &&
+        r.guest_names &&
+        r.guest_names.length > 0
+    );
+  }, [hostReg, myRegs]);
 
   const myActiveSeatCount = myRegs.reduce((sum, r) => sum + (r.seats || 0), 0);
   const hasMyReg = myRegs.length > 0;

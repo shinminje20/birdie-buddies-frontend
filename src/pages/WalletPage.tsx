@@ -11,7 +11,7 @@ import {
 function displayKind(kind: string) {
   const k = (kind || "").toLowerCase();
   if (k === "deposit_in" || k === "deposit-in") return "Deposit";
-  if (k === "fee_capture") return "Drop-in paid";
+  if (k === "fee_capture") return "Paid";
   if (k === "refund") return "Refund";
   if (k === "penalty") return "Penalty";
   return k.replace(/_/g, "-"); // fallback
@@ -88,7 +88,10 @@ export default function WalletPage() {
             {rows.map((e: WalletLedgerRow) => {
               // Build label with session title if available
               let label = "";
-              let dateToShow = "";
+              const sessionDate = e.starts_at_utc
+                ? mmdd(e.starts_at_utc)
+                : null;
+              const transactionDate = mmdd(e.created_at);
               const kindLabel =
                 displayKind(e.kind) != "Deposit"
                   ? displayKind(e.kind)
@@ -96,17 +99,10 @@ export default function WalletPage() {
                   ? displayKind(e.kind)
                   : "Admin withdrawal";
 
-              if (e.session_title && e.starts_at_utc) {
-                const sessionDate = mmdd(e.starts_at_utc);
-                label = `${e.session_title} - ${kindLabel}`;
-                dateToShow = sessionDate; // Show session date
-              } else if (e.session_id && e.starts_at_utc) {
-                const sessionDate = mmdd(e.starts_at_utc);
-                label = `Session - ${kindLabel}`;
-                dateToShow = sessionDate; // Show session date
+              if (kindLabel === "Paid") {
+                label = `${kindLabel} for session - ${sessionDate}`;
               } else {
                 label = `${kindLabel}`;
-                dateToShow = mmdd(e.created_at); // Show transaction date for non-session entries
               }
 
               const sign = e.amount_cents >= 0 ? "+" : "-";
@@ -123,7 +119,7 @@ export default function WalletPage() {
                       className="waitlist-seats"
                       style={{ fontSize: "0.85em", color: "var(--medium)" }}
                     >
-                      {dateToShow}
+                      {`Processed on: ${transactionDate}`}
                     </div>
                   </div>
                   <div className="stat-value" style={{ marginLeft: "auto" }}>
