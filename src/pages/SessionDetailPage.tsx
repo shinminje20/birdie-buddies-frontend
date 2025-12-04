@@ -768,14 +768,12 @@ export default function SessionDetailPage() {
             </div>
             <div>
               {canceled.map((r: RegRow) => {
-                const canceledAtLabel = r.canceled_at
-                  ? new Date(r.canceled_at).toLocaleString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })
-                  : "time unknown";
+                // const canceledAtLabel = r.canceled_at
+                //   ? new Date(r.canceled_at).toLocaleString(undefined, {
+                //       month: "short",
+                //       day: "numeric",
+                //     })
+                //   : "time unknown";
                 return (
                   <div className="waitlist-item" key={r.registration_id}>
                     <div className="waitlist-info">
