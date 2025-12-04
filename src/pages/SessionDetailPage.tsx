@@ -102,13 +102,11 @@ export default function SessionDetailPage() {
     const canceledRegs = (regs.data ?? []).filter(
       (r) => r.state === "canceled" && r.canceled_from_state === "confirmed"
     );
-    return canceledRegs
-      .slice()
-      .sort((a, b) => {
-        const aTime = a.canceled_at ? new Date(a.canceled_at).getTime() : 0;
-        const bTime = b.canceled_at ? new Date(b.canceled_at).getTime() : 0;
-        return aTime - bTime;
-      });
+    return canceledRegs.slice().sort((a, b) => {
+      const aTime = a.canceled_at ? new Date(a.canceled_at).getTime() : 0;
+      const bTime = b.canceled_at ? new Date(b.canceled_at).getTime() : 0;
+      return aTime - bTime;
+    });
   }, [regs.data]);
 
   const [showAll, setShowAll] = useState(false);
@@ -788,7 +786,8 @@ export default function SessionDetailPage() {
                           {r.guest_names?.length
                             ? ` • ${r.guest_names.join(", ")}`
                             : ""}
-                          {" • "}Canceled {canceledAtLabel}
+                          {/* {" • "}
+                          {canceledAtLabel} */}
                         </div>
                       </div>
                     </div>
