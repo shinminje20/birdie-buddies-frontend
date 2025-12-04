@@ -98,6 +98,18 @@ export default function SessionDetailPage() {
 
   const confirmed = (regs.data ?? []).filter((r) => r.state === "confirmed");
   const waitlist = (regs.data ?? []).filter((r) => r.state === "waitlisted");
+  const canceled = useMemo(() => {
+    const canceledRegs = (regs.data ?? []).filter(
+      (r) => r.state === "canceled" && r.canceled_from_state === "confirmed"
+    );
+    return canceledRegs
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.canceled_at ? new Date(a.canceled_at).getTime() : 0;
+        const bTime = b.canceled_at ? new Date(b.canceled_at).getTime() : 0;
+        return aTime - bTime;
+      });
+  }, [regs.data]);
 
   const [showAll, setShowAll] = useState(false);
   const confirmedTopSix = showAll ? confirmed : confirmed.slice(0, 6);
@@ -749,6 +761,43 @@ export default function SessionDetailPage() {
             ))}
           </div>
         </div>
+
+        {canceled.length > 0 && (
+          <div className="participants-section">
+            <div className="section-header">
+              <h2 className="section-title">Canceled</h2>
+              <span className="participant-count">{canceled.length}</span>
+            </div>
+            <div>
+              {canceled.map((r: RegRow) => {
+                const canceledAtLabel = r.canceled_at
+                  ? new Date(r.canceled_at).toLocaleString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      hour: "numeric",
+                      minute: "2-digit",
+                    })
+                  : "time unknown";
+                return (
+                  <div className="waitlist-item" key={r.registration_id}>
+                    <div className="waitlist-info">
+                      <div className="waitlist-details">
+                        <div className="waitlist-name">{r.host_name}</div>
+                        <div className="waitlist-meta">
+                          {r.seats} seat(s)
+                          {r.guest_names?.length
+                            ? ` • ${r.guest_names.join(", ")}`
+                            : ""}
+                          {" • "}Canceled {canceledAtLabel}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Loading Overlay */}

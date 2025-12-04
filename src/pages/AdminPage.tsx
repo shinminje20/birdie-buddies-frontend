@@ -92,6 +92,8 @@ function displayKind(kind: string) {
   if (k === "fee_capture") return "Drop-in paid";
   if (k === "refund") return "Refund";
   if (k === "penalty") return "Penalty";
+  if (k === "hold") return "Hold waitlist";
+  if (k === "hold_release") return "Cancel waitlist";
   return k.replace(/_/g, "-"); // fallback
 }
 
@@ -796,6 +798,12 @@ function UsersAdminCard() {
                             : e.amount_cents >= 0
                             ? displayKind(e.kind)
                             : "Admin withdrawal";
+                        const isHoldKind = /^(hold|hold_release)$/i.test(
+                          e.kind || ""
+                        );
+                        const displayAmountCents = isHoldKind
+                          ? -e.amount_cents
+                          : e.amount_cents;
 
                         let label = "";
                         let dateToShow = "";
@@ -831,8 +839,10 @@ function UsersAdminCard() {
                               className="stat-value"
                               style={{ marginLeft: "auto" }}
                             >
-                              {e.amount_cents >= 0 ? "+" : "-"}
-                              {formatDollarsFromCents(Math.abs(e.amount_cents))}
+                              {displayAmountCents >= 0 ? "+" : "-"}
+                              {formatDollarsFromCents(
+                                Math.abs(displayAmountCents)
+                              )}
                             </div>
                           </div>
                         );

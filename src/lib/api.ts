@@ -33,6 +33,8 @@ export type RegRow = {
   state: "confirmed" | "waitlisted" | "canceled";
   group_key?: string | null;
   is_host?: boolean;
+  canceled_at?: string | null;
+  canceled_from_state?: "confirmed" | "waitlisted" | null;
 };
 
 export type MyRegistration = {
