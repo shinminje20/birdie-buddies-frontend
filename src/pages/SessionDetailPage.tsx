@@ -68,6 +68,7 @@ export default function SessionDetailPage() {
   const [requestId, setRequestId] = useState<string | undefined>();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
 
   // Use ref to track if we should continue polling
   const shouldPollRef = useRef<boolean>(false);
@@ -233,6 +234,45 @@ export default function SessionDetailPage() {
     };
   }, []);
 
+  // Admin-only: local attendance tracker per session (no backend changes)
+  const attendanceKey = useMemo(
+    () => (id ? `attendance:${id}` : undefined),
+    [id]
+  );
+
+  useEffect(() => {
+    if (!attendanceKey) return;
+    try {
+      const raw = localStorage.getItem(attendanceKey);
+      if (raw) setAttendance(JSON.parse(raw));
+    } catch {
+      // ignore malformed local data
+    }
+  }, [attendanceKey]);
+
+  const persistAttendance = useCallback(
+    (next: Record<string, boolean>) => {
+      if (!attendanceKey) return;
+      try {
+        localStorage.setItem(attendanceKey, JSON.stringify(next));
+      } catch {
+        // storage might be unavailable; fail silently
+      }
+    },
+    [attendanceKey]
+  );
+
+  const toggleAttendance = useCallback(
+    (registrationId: string) => {
+      setAttendance((prev) => {
+        const next = { ...prev, [registrationId]: !prev[registrationId] };
+        persistAttendance(next);
+        return next;
+      });
+    },
+    [persistAttendance]
+  );
+
   const handleRegistration = async () => {
     if (wallet.isSuccess && !canAfford) {
       flashWarn(
@@ -322,6 +362,8 @@ export default function SessionDetailPage() {
       </MobileShell>
     );
   const s: Session = sess.data;
+  const hasStarted = new Date() >= new Date(s.starts_at_utc);
+  const isAdmin = !!user?.is_admin;
 
   return (
     <MobileShell>
@@ -625,10 +667,44 @@ export default function SessionDetailPage() {
             <h2 className="section-title">Confirmed</h2>
             <span className="participant-count">{s.confirmed_seats}</span>
           </div>
+          {isAdmin && (
+            <div
+              style={{
+                fontSize: "12px",
+                color: "var(--medium)",
+                marginBottom: 8,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              Admin-only attendance tracker (stored locally on this device)
+              {hasStarted ? "" : " • available once the session starts"}
+              <button
+                className="btn btn-secondary"
+                style={{
+                  padding: "4px 8px",
+                  fontSize: "11px",
+                  marginLeft: "auto",
+                }}
+                onClick={() => {
+                  if (!attendanceKey) return;
+                  setAttendance({});
+                  try {
+                    localStorage.removeItem(attendanceKey);
+                  } catch {
+                    // ignore
+                  }
+                }}
+              >
+                Reset attendance
+              </button>
+            </div>
+          )}
           <div>
             {confirmedTopSix.map((r: RegRow) => (
               <div className="participant-card" key={r.registration_id}>
-                <div className="participant-info">
+                <div className="participant-info" style={{ gap: 10 }}>
                   <div className="participant-avatar">
                     {r.host_name.slice(0, 2).toUpperCase()}
                   </div>
@@ -651,6 +727,26 @@ export default function SessionDetailPage() {
                       ) : null}
                     </div>
                   </div>
+                  {isAdmin && hasStarted && (
+                    <label
+                      style={{
+                        marginLeft: "auto",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: "12px",
+                        color: "var(--dark)",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!attendance[r.registration_id]}
+                        onChange={() => toggleAttendance(r.registration_id)}
+                      />
+                      Attended
+                    </label>
+                  )}
                 </div>
               </div>
             ))}
