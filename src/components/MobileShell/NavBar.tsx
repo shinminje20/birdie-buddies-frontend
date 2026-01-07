@@ -44,8 +44,8 @@ export default function NavBar() {
           }}
           onClick={() => nav("/sessions")}
         >
-          <img src="/birdie2.svg" alt="BirdieBuddies" width={34} height={34} />
-          <span>BirdieBuddies</span>
+          <img src="/birdie2.svg" alt="Birdie Buddies" width={34} height={34} />
+          <span>Birdie Buddies</span>
         </div>
 
         <div className="user-menu" style={{ position: "relative" }}>

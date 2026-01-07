@@ -16,13 +16,8 @@ export default function TermsOfServicePage() {
       <div className="main-content legal-content">
         <div className="legal-topbar">
           <div className="legal-brand">
-            <img
-              src="/birdie2.svg"
-              alt="BirdieBuddies"
-              width={28}
-              height={28}
-            />
-            <span>BirdieBuddies</span>
+            <img src="/birdie2.svg" alt="Birdie Buddies" width={28} height={28} />
+            <span>Birdie Buddies</span>
           </div>
           <div className="legal-link" onClick={handleBack}>
             Back
@@ -34,7 +29,7 @@ export default function TermsOfServicePage() {
 
         <h2>Acceptance</h2>
         <p>
-          By using BirdieBuddies, you agree to these Terms. If you do not agree,
+          By using Birdie Buddies, you agree to these Terms. If you do not agree,
           do not use the service.
         </p>
 
@@ -59,7 +54,7 @@ export default function TermsOfServicePage() {
 
         <h2>Payments</h2>
         <p>
-          BirdieBuddies may record deposits or payment notifications to help
+          Birdie Buddies may record deposits or payment notifications to help
           manage sessions. You are responsible for verifying your payment
           details with your bank or provider.
         </p>
@@ -78,7 +73,7 @@ export default function TermsOfServicePage() {
 
         <h2>Limitation of Liability</h2>
         <p>
-          To the maximum extent permitted by law, BirdieBuddies is not liable
+          To the maximum extent permitted by law, Birdie Buddies is not liable
           for indirect, incidental, or consequential damages.
         </p>
 

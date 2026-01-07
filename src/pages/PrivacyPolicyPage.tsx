@@ -16,13 +16,8 @@ export default function PrivacyPolicyPage() {
       <div className="main-content legal-content">
         <div className="legal-topbar">
           <div className="legal-brand">
-            <img
-              src="/birdie2.svg"
-              alt="BirdieBuddies"
-              width={28}
-              height={28}
-            />
-            <span>BirdieBuddies</span>
+            <img src="/birdie2.svg" alt="Birdie Buddies" width={28} height={28} />
+            <span>Birdie Buddies</span>
           </div>
           <div className="legal-link" onClick={handleBack}>
             Back
@@ -34,7 +29,7 @@ export default function PrivacyPolicyPage() {
 
         <h2>Overview</h2>
         <p>
-          This Privacy Policy explains how BirdieBuddies ("we", "us", "our")
+          This Privacy Policy explains how Birdie Buddies ("we", "us", "our")
           collects, uses, and shares information when you use our app and
           services.
         </p>
@@ -55,7 +50,7 @@ export default function PrivacyPolicyPage() {
 
         <h2>How We Use Information</h2>
         <ul>
-          <li>Provide and operate the BirdieBuddies service.</li>
+          <li>Provide and operate the Birdie Buddies service.</li>
           <li>Confirm and record payments or deposits tied to your account.</li>
           <li>Improve, secure, and maintain the service.</li>
         </ul>
