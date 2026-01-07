@@ -7,6 +7,7 @@ import MyGamesPage from "./pages/MyGamesPage";
 import AdminPage from "./pages/AdminPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import HomePage from "./pages/HomePage";
 // import ProfilePage from "./pages/ProfilePage"; // used as the login screen
 import LoginPage from "./pages/LoginPage";
 import {
@@ -18,8 +19,8 @@ import {
 export default function App() {
   return (
     <Routes>
-      {/* Default to /login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Public home page */}
+      <Route path="/" element={<HomePage />} />
 
       {/* Public (guest-only) */}
       <Route

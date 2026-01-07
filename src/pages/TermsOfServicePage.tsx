@@ -1,6 +1,16 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function TermsOfServicePage() {
+  const nav = useNavigate();
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      nav(-1);
+      return;
+    }
+    nav("/");
+  };
+
   return (
     <div className="app-container legal-page">
       <div className="main-content legal-content">
@@ -14,9 +24,9 @@ export default function TermsOfServicePage() {
             />
             <span>BirdieBuddies</span>
           </div>
-          <Link className="legal-link" to="/login">
-            Back to Login
-          </Link>
+          <div className="legal-link" onClick={handleBack}>
+            Back
+          </div>
         </div>
 
         <h1 className="page-title">Terms of Service</h1>
