@@ -5,6 +5,8 @@ import SessionDetailPage from "./pages/SessionDetailPage";
 import WalletPage from "./pages/WalletPage";
 import MyGamesPage from "./pages/MyGamesPage";
 import AdminPage from "./pages/AdminPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 // import ProfilePage from "./pages/ProfilePage"; // used as the login screen
 import LoginPage from "./pages/LoginPage";
 import {
@@ -28,6 +30,8 @@ export default function App() {
           </RequireGuest>
         }
       />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
 
       {/* Authenticated app */}
       <Route

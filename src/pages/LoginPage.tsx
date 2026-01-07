@@ -2,7 +2,7 @@
 import { useState } from "react";
 import MobileShell from "../components/MobileShell/MobileShell";
 import { useAuth } from "../lib/auth";
-import { useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useNavigate, useLocation, Navigate, Link } from "react-router-dom";
 
 type Step = "email" | "login" | "signup" | "verify";
 
@@ -355,6 +355,14 @@ export default function LoginPage() {
             {error}
           </div>
         )}
+
+        <div className="legal-links">
+          <span>By continuing, you agree to our </span>
+          <Link to="/terms">Terms of Service</Link>
+          <span> and </span>
+          <Link to="/privacy">Privacy Policy</Link>
+          <span>.</span>
+        </div>
       </div>
     </MobileShell>
   );
